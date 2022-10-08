@@ -1,2 +1,2 @@
-tour.js linguist-language=JavaScript
+*.js linguist-language=JavaScript
 *.css linguist-language=css
