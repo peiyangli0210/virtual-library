@@ -1,2 +1,3 @@
 *.js linguist-language=JavaScript
 *.css linguist-language=css
+*.xml linguist-language=XML
