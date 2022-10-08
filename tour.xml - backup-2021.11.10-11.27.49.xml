@@ -1,0 +1,1962 @@
+<krpano version="1.20" title="Virtual Tour" now_play="">
+	
+	<include url="%SWFPATH%/plugins/showtext.xml" />
+	<include url="skin/vtourskin.xml" />
+	<include url="video-player.xml" />
+	<include url="combobox.xml" />
+	<!-- customize skin settings: maps, gyro, webvr, thumbnails, tooltips, layout, design, ... -->
+	<skin_settings autotour="true"
+				   maps="false"
+	               maps_type="bing"
+	               maps_bing_api_key=""
+	               maps_google_api_key=""
+	               maps_zoombuttons="false"
+	               gyro="true"
+	               webvr="true"
+	               webvr_gyro_keeplookingdirection="false"
+	               webvr_prev_next_hotspots="true"
+	               littleplanetintro="true"
+	               title="true"
+	               thumbs="true"
+	               thumbs_width="120" thumbs_height="80" thumbs_padding="10" thumbs_crop="0|40|240|160"
+	               thumbs_opened="false"
+	               thumbs_text="false"
+	               thumbs_dragging="true"
+	               thumbs_onhoverscrolling="false"
+	               thumbs_scrollbuttons="false"
+	               thumbs_scrollindicator="false"
+	               thumbs_loop="false"
+	               tooltips_buttons="false"
+	               tooltips_thumbs="false"
+	               tooltips_hotspots="false"
+	               tooltips_mapspots="false"
+	               deeplinking="false"
+	               loadscene_flags="MERGE"
+	               loadscene_blend="OPENBLEND(0.5, 0.0, 0.75, 0.05, linear)"
+	               loadscene_blend_prev="SLIDEBLEND(0.5, 180, 0.75, linear)"
+	               loadscene_blend_next="SLIDEBLEND(0.5,   0, 0.75, linear)"
+	               loadingtext="loading..."
+	               layout_width="100%"
+	               layout_maxwidth="814"
+	               controlbar_width="-24"
+	               controlbar_height="40"
+	               controlbar_offset="20"
+	               controlbar_offset_closed="-40"
+	               controlbar_overlap.no-fractionalscaling="10"
+	               controlbar_overlap.fractionalscaling="0"
+	               design_skin_images="vtourskin.png"
+	               design_bgcolor="0x2D3E50"
+	               design_bgalpha="0.8"
+	               design_bgborder="0"
+	               design_bgroundedge="1"
+	               design_bgshadow="0 4 10 0x000000 0.3"
+	               design_thumbborder_bgborder="3 0xFFFFFF 1.0"
+	               design_thumbborder_padding="2"
+	               design_thumbborder_bgroundedge="0"
+	               design_text_css="color:#FFFFFF; font-family:Arial;"
+	               design_text_shadow="1"
+	               />
+
+	<!--
+	    For an alternative skin design either change the <skin_settings> values 
+	    from above or optionally include one of the predefined designs from below.
+	-->
+	<!-- <include url="skin/vtourskin_design_flat_light.xml"  /> -->
+	<!-- <include url="skin/vtourskin_design_glass.xml"       /> -->
+	<!-- <include url="skin/vtourskin_design_ultra_light.xml" /> -->
+	<!-- <include url="skin/vtourskin_design_117.xml"         /> -->
+	<!-- <include url="skin/vtourskin_design_117round.xml"    /> -->
+	<!-- <include url="skin/vtourskin_design_black.xml"       /> -->
+	<include url="skin/vtourskin_design_glass.xml"       if="design === 'glass'"       />
+	<include url="skin/vtourskin_design_flat.xml"        if="design === 'flat'"        />
+	<include url="skin/vtourskin_design_flat_light.xml"  if="design === 'flat_light'"  />
+	<include url="skin/vtourskin_design_ultra_light.xml" if="design === 'ultra_light'" />
+	<include url="skin/vtourskin_design_117.xml"         if="design === '117'"         />
+
+<!--	<include url="skin/1.xml"   /> -->
+ 
+
+  <!--插入部分-->
+	<action name="startup" autorun="onstart">
+		if(startscene === null, copy(startscene,scene[0].name));
+		loadscene(get(startscene), null, MERGE);
+		if(startscene === null OR !scene[get(startscene)], copy(startscene,scene[0].name); );
+		loadscene(get(startscene), null, MERGE);
+		if(startactions !== null, startactions() );
+		
+		copy(scene_name,scene[get(xml.scene)].index);
+		<!-- showlog(); -->
+
+	</action>
+	
+	<action name="picture_resize">
+		div(sceen_aspect, layer[%1].imagewidth, layer[%1].imageheight);
+		if(sceen_aspect GE 1,mul(new_width, layer[%1].imagewidth, 0.2);mul(new_height, layer[%1].imageheight, 0.4););
+		if(sceen_aspect LT 1,mul(new_width, layer[%1].imagewidth, 0.6);mul(new_height, layer[%1].imageheight, 0.4););
+		roundval(new_width);
+		roundval(new_height);
+		copy(layer[%1].width, new_width);
+		copy(layer[%1].height, new_height);
+
+	</action>
+			<!-- 自定义地图开始， mapcontainer是一个半透明容器container，keep为true，确保了切换场景时地图不会被移除，mapcontainer是其它子layer的父亲，bgcolor以及bgalpha是颜色和透明度的设定，通过改动align以及xy坐标可以确定地图的位置，通过改变width和height确定该矩形的宽度和高度，-->
+	<layer name="mapcontainer" keep="true" type="container" bgcolor="0xFFFFFF" bgalpha="0.5" align="lefttop" x="0" y="0" width="100%" height="100%" onloaded="picture_resize(get(name))">
+	<!-- map的url属性可以改成我们自己的地图文件，align一定是lefttop，这是为了确定热点位置，其坐标系以左上角为0点，也是为了方便我们通过ps等方法来获取热点的值。-->
+		<layer name="jiantou" url="skin/zuo.png" align="right" x="-38" y="0" width="40" height="128" onclick="close_map();"> </layer>
+		<layer name="map" url="skin/onefloor.png" align="lefttop" x="0" y="0" width="100%" height="100%" handcursor="false" scalechildren="true">
+			<!-- 雷达遮罩部分，确保了雷达的扇形不会超出范围，这里也就是地图map的范围。注意这里也应该是对齐左上角，下面的各种layer通通都是对齐左上角，不然坐标系不统一的话，就很难确定热点的位置 -->
+			
+			<layer name="radarmask" type="container" align="lefttop" width="100%" height="100%" maskchildren="true">
+
+				<!-- 雷达插件 zoder=1 在开始时为隐藏，只有激活activetespot这个action时才会显示 zorder为叠放次序 数字越大越靠前 -->
+				<layer name="radar" visible="false"
+				       url="%SWFPATH%/plugins/radar.swf" alturl="%SWFPATH%/plugins/radar.js"
+				       align="lefttop" edge="center" zorder="1"
+				       scale="0.8"
+					   fillcolor="0xFFFFFF" fillalpha="0.3"
+				       linecolor="0xFFFF00" linewidth="3" linealpha="1"
+				       headingoffset="0"
+				       />
+
+				<!-- 热点 zorder=2，用style来统一处理 400" 所有layer都载入了一个名为spot的style，注意这里spot是由0开始，而不是由1开始的，因此在一般情况下，地图点与场景一一对应，而场景的index是从0开始的，所以我们可以利用这一点提高代码的可读性-->
+				<!-- 13 -->
+				<layer name="spot0" style="spot" x="509" y="1063"  />
+				<layer name="spot1" style="spot" x="980" y="1010"  />
+				<layer name="spot2" style="spot" x="980"  y="610"   />
+				<layer name="spot3" style="spot" x="780" y="592"  />
+				<layer name="spot4" style="spot" x="500" y="950"  />
+				<layer name="spot5" style="spot" x="600" y="600"  />
+				<layer name="spot6" style="spot" x="558" y="449"  />
+				<layer name="spot7" style="spot" x="576"  y="143"   />
+				<layer name="spot8" style="spot" x="780" y="475"  />
+				<layer name="spot9" style="spot" x="432" y="400"  />
+				<layer name="spot10" style="spot" x="380" y="620"  />
+				<layer name="spot11" style="spot" x="500" y="800"  />
+				<layer name="spot12" style="spot" x="200" y="1063"  />
+				<layer name="spot13" style="spot" x="100" y="1063"  />
+				
+				
+				<!-- 3 -->
+				<layer name="spot14" style="spot" x="820" y="580"  />
+				<layer name="spot15" style="spot" x="1020" y="620"  />
+				<layer name="spot16" style="spot" x="660"  y="580"   />
+				
+				<!-- 3 -->
+				<layer name="spot17" style="spot" x="820" y="600"  />
+				<layer name="spot18" style="spot" x="1015" y="630"  />
+				<layer name="spot19" style="spot" x="650" y="600"  />
+				
+				<!-- 7 -->
+				<layer name="spot20" style="spot" x="560" y="230"  />
+				<layer name="spot21" style="spot" x="560"  y="500"   />
+				<layer name="spot22" style="spot" x="440" y="400"  />
+				<layer name="spot23" style="spot" x="555" y="586"  />
+				<layer name="spot24" style="spot" x="785" y="600"  />
+				<layer name="spot25" style="spot" x="1015" y="625"  />
+				<layer name="spot26" style="spot" x="100" y="500"  />
+				
+				<!-- 4 -->
+				<layer name="spot27" style="spot" x="350" y="500"  />
+				<layer name="spot28" style="spot" x="220" y="410"  />
+				<layer name="spot29" style="spot" x="340" y="160"  />
+				<layer name="spot30" style="spot" x="350" y="240"  />
+				<layer name="spot31" style="spot" x="400" y="240"  />
+				<layer name="spot32" style="spot" x="600" y="240"  />
+				<!-- 1 -->
+				<layer name="spot33" style="spot" x="-100" y="500"  />
+				<!-- 激活的热点 zorder=3 开始时候隐藏，在这里是一个绿色的地图点， 表示当前的场景-->
+				<layer name="activespot" url="skin/vtourskin_mapspotactive.png" scale="1" oy="-17" align="lefttop" edge="center" zorder="3" visible="false"/>
+			</layer>
+		</layer>
+	</layer>
+
+	
+<!-- 地图点中相同的代码，都写在了style里面，修改的时候只需要修改style里面的代码，提高了效率。在onclick里，先是用subtxt得出spot后面的数字，也就是index，然后检查是否点击的热点就是当前场景，因为没有必要点击当前场景的热点又载入一遍，如果是点击其他的热点，则载入其他场景，载入场景的loadscene中利用了之前得到的spotid，这样就不用每次都写场景的名字了。-->
+     <style name="spot" url="skin/vtourskin_mapspot.png" scale="1" oy="-17" align="lefttop" edge="center" zorder="2" visible="true" onclick="subtxt(spotid,get(name),4,2);if(spotid != scene[get(xml.scene)].index,  
+  loadscene(get(scene[get(spotid)].name),null,MERGE,BLEND(1)););
+  " />  
+
+	<!-- 激活热点 - %1 = 当前雷达的方向值heading -->
+	<action name="activatespot">  
+		<!-- 因此绿色地图点会在每次激活时替换蓝色普通地图点，因此每次激活之前，首先保证所有蓝色地图点是可见的，如果没有下面这个代码，则会使得上一个场景的蓝色地图点消失，这里用的是一个循环语句-->  
+		for(set(i,0),i LT scene.count,inc(i),  
+		txtadd(spotname,'spot',get(i));  
+		set(layer[get(spotname)].visible, false);  
+		);  
+		
+		
+		copy(scene_name,scene[get(xml.scene)].index);
+		<!-- trace("%FIRSTXML%/skin/twofloor.png"); -->
+		
+		<!-- 载入第一层地图及地图点 -->
+		if(scene_name LT 14,
+			set(layer[map].url,"%FIRSTXML%/skin/onefloor.png");
+
+			for(set(i,0),i LT 14,inc(i),  
+			txtadd(spotname,'spot',get(i));  
+			set(layer[get(spotname)].visible, true);  
+			);  
+		
+		);
+		
+		
+		<!-- 载入第二层地图及地图点 -->
+		if(scene_name GT 13 AND scene_name LT 17,
+			set(layer[map].url,"%FIRSTXML%/skin/twofloor.png");
+			for(set(i,14),i LT 17,inc(i),  
+			txtadd(spotname,'spot',get(i));  
+			set(layer[get(spotname)].visible, true);  
+			);
+		);
+		
+		<!-- 载入第三层地图及地图点 -->
+		if(scene_name GT 16 AND scene_name LT 20,
+			set(layer[map].url,"%FIRSTXML%/skin/threefloor.png");
+			for(set(i,17),i LT 20,inc(i),  
+			txtadd(spotname,'spot',get(i));  
+			set(layer[get(spotname)].visible, true);  
+			);
+		
+		);
+
+		<!-- 载入第四层地图及地图点 -->
+		if(scene_name GT 19 AND scene_name LT 27,
+			set(layer[map].url,"%FIRSTXML%/skin/fourfloor.png");
+			for(set(i,20),i LT 27,inc(i),  
+			txtadd(spotname,'spot',get(i));  
+			set(layer[get(spotname)].visible, true);  
+			);
+		
+		);
+		
+		<!-- 载入第五层地图及地图点 -->
+		if(scene_name GT 26 AND scene_name LT 33,
+			set(layer[map].url,"%FIRSTXML%/skin/fivefloor.png");
+			for(set(i,27),i LT 33,inc(i),  
+			txtadd(spotname,'spot',get(i));  
+			set(layer[get(spotname)].visible, true);  
+			);
+		
+		);
+		
+		<!-- 载入第六层地图 -->
+		if(scene_name GT 32,
+			set(layer[map].url,"%FIRSTXML%/skin/sixfloor.png");
+			for(set(i,33),i LT 34,inc(i),  
+			txtadd(spotname,'spot',get(i));  
+			set(layer[get(spotname)].visible, true);  
+			);
+		
+		);
+
+
+		<!-- trace(get(layer[map].url)); -->
+		<!-- 将当前热点的坐标复制到雷达和激活点的坐标，直接利用当前场景的index，反过来得到layer的名字，这样就使得这个activetespot的参数只要一个就可以了-->  
+		txtadd(spotidnow,'spot',get(scene[get(xml.scene)].index));  
+		
+		copy(layer[radar].x, layer[get(spotidnow)].x);  
+		copy(layer[radar].y, layer[get(spotidnow)].y);  
+		copy(layer[activespot].x, layer[get(spotidnow)].x);  
+		copy(layer[activespot].y, layer[get(spotidnow)].y);  
+	  
+		<!-- 将第二个参数赋值到雷达的heading -->  
+		set(layer[radar].heading, %1);  
+	  
+			<!-- 显示雷达和绿色激活热点，以及隐藏当前场景的地图点 -->  
+		set(layer[radar].visible, true);  
+		set(layer[activespot].visible, true);  
+		set(layer[get(spotidnow)].visible, false);  
+		
+		
+    </action>  	
+	
+	<action name="do_crop_animation" scope="local" args="framewidth, frameheight, framerate">
+	<!-- 定义局部变量 -->
+	
+	
+	calc(local.xframes, (caller.imagewidth /framewidth) BOR 0);
+	calc(local.frames, xframes * ((caller.imageheight / frameheight) BOR 0));
+	def(local.frame, integer, 0);
+	
+	<!-- 设置第一帧 -->
+	calc(caller.crop, '0|0|' + framewidth + '|' + frameheight);
+	
+	<!-- 动画部分 -->
+	setinterval(calc('crop_anim_' + caller.name), calc(1.0 / framerate),
+		if(caller.loaded,
+			inc(frame);
+			if(frame GE frames, if(caller.onlastframe !== null, callwith(caller, onlastframe() ) ); set(frame,0); );
+			mod(xpos, frame, xframes);
+			div(ypos, frame, xframes);
+			Math.floor(ypos);
+			mul(xpos, framewidth);
+			mul(ypos, frameheight);
+			calc(caller.crop, xpos + '|' + ypos + '|' + framewidth + '|' + frameheight);
+		  ,
+			<!-- 当热点移除时停止动画 -->
+			clearinterval(calc('crop_anim_' + caller.name));
+		);
+	);
+	</action>
+	
+
+<action name="add_all_the_time_tooltip_for_VR">
+	
+	
+	 txtadd(tooltipname, 'vrtooltip_', get(name));
+	 addhotspot(get(tooltipname)); 
+	 set(hotspot[get(tooltipname)].type,text);
+	 copy(hotspot[get(tooltipname)].edge,hotspot[get(name)].edge);
+	 copy(hotspot[get(tooltipname)].distorted,hotspot[get(name)].distorted);
+	 copy(hotspot[get(tooltipname)].ath,hotspot[get(name)].ath);
+	 copy(hotspot[get(tooltipname)].atv,hotspot[get(name)].atv);
+	 set(hotspot[get(tooltipname)].oy,-20);
+	 set(hotspot[get(tooltipname)].ox,0);
+	 set(hotspot[get(tooltipname)].vcenter,true);
+	 set(hotspot[get(tooltipname)].padding,10);
+         set(hotspot[get(tooltipname)].mipmapping,true);
+         set(hotspot[get(tooltipname)].oversampling,2);
+	 set(hotspot[get(tooltipname)].bg,true);
+	 set(hotspot[get(tooltipname)].bgcolor,0x8D8D8D);
+	 set(hotspot[get(tooltipname)].bgroundedge,5);
+	 set(hotspot[get(tooltipname)].bgalpha,0.65);
+	 set(hotspot[get(tooltipname)].bgborder,0);
+	 set(hotspot[get(tooltipname)].bgshadow,'0 0 0 0x000000 0');
+	 set(hotspot[get(tooltipname)].css,'text-align:left; color:#FFFFFF; font-family:MicrosoftYahei; font-size:24px;');
+	 if(device.mobile,set(hotspot[get(tooltipname)].css,'text-align:center; color:#FFFFFF; font-family:MicrosoftYahei; font-weight:bold; font-size:24px;');
+	 );
+	 set(hotspot[get(tooltipname)].txtshadow,'0 0 0 0x000000 0');
+ 
+	 if(text == '' OR text === null,
+ 
+		 copy(hotspot[get(tooltipname)].html,scene[get(linkedscene)].title),
+		 copy(hotspot[get(tooltipname)].html,text);
+ 
+	 ); 
+ 
+	 set(hotspot[get(tooltipname)].enabled,false); 
+ 
+	 if(lp_running == false,
+	 	set(hotspot[get(tooltipname)].visible,true); 
+	 	, 	
+	 	if(!webvr.isenabled,
+	 	  if(lp_running == true,
+		 	set(hotspot[get(tooltipname)].visible,false); 
+		 	set(hotspot[get(tooltipname)].mark2,true);
+	 	   );
+	 	  );
+	 	);
+	
+	 if(hotspot[get(name)].normal == false, 
+ 
+		set(hotspot[get(tooltipname)].normal,false);
+		set(hotspot[get(tooltipname)].onloaded,
+			if(webvr.isenabled,
+				set(visible,false);
+				,	
+				if(lp_running == false OR lp_running == null OR lp_running === null,  
+					set(visible,true);
+					);
+				);
+	       );
+ 
+	 	);
+</action>
+
+<action name="add_all_the_time_tooltip_for_VR_re">
+	
+	 txtadd(tooltipname, 'vrtooltip_', get(name));
+	 addhotspot(get(tooltipname)); 
+	 set(hotspot[get(tooltipname)].type,text);
+	 copy(hotspot[get(tooltipname)].edge,hotspot[get(name)].edge);
+	 copy(hotspot[get(tooltipname)].distorted,hotspot[get(name)].distorted);
+	 copy(hotspot[get(tooltipname)].ath,hotspot[get(name)].ath);
+	 copy(hotspot[get(tooltipname)].atv,hotspot[get(name)].atv);
+	 set(hotspot[get(tooltipname)].oy,0);
+	 set(hotspot[get(tooltipname)].ox,+50);
+	 set(hotspot[get(tooltipname)].vcenter,true);
+	 set(hotspot[get(tooltipname)].padding,10);
+         set(hotspot[get(tooltipname)].mipmapping,true);
+         set(hotspot[get(tooltipname)].oversampling,2);
+	 set(hotspot[get(tooltipname)].bg,true);
+	 set(hotspot[get(tooltipname)].bgcolor,0x8D8D8D);
+	 set(hotspot[get(tooltipname)].bgroundedge,5);
+	 set(hotspot[get(tooltipname)].bgalpha,0.65);
+	 set(hotspot[get(tooltipname)].bgborder,0);
+	 set(hotspot[get(tooltipname)].bgshadow,'0 0 0 0x000000 0');
+	 set(hotspot[get(tooltipname)].css,'text-align:left; color:#FFFFFF; font-family:MicrosoftYahei; font-size:12px;');
+	 if(device.mobile,set(hotspot[get(tooltipname)].css,'text-align:center; color:#FFFFFF; font-family:MicrosoftYahei; font-weight:bold; font-size:12px;');
+	 );
+	 set(hotspot[get(tooltipname)].txtshadow,'0 0 0 0x000000 0');
+ 
+	 if(text == '' OR text === null,
+ 
+		 copy(hotspot[get(tooltipname)].html,scene[get(linkedscene)].title),
+		 copy(hotspot[get(tooltipname)].html,text);
+ 
+	 ); 
+ 
+	 set(hotspot[get(tooltipname)].enabled,false); 
+ 
+	 if(lp_running == false,
+	 	set(hotspot[get(tooltipname)].visible,true); 
+	 	, 	
+	 	if(!webvr.isenabled,
+	 	  if(lp_running == true,
+		 	set(hotspot[get(tooltipname)].visible,false); 
+		 	set(hotspot[get(tooltipname)].mark2,true);
+	 	   );
+	 	  );
+	 	);
+ 
+	 if(hotspot[get(name)].normal == false, 
+ 
+		set(hotspot[get(tooltipname)].normal,false);
+		set(hotspot[get(tooltipname)].onloaded,
+			if(webvr.isenabled,
+				set(visible,false);
+				,	
+				if(lp_running == false OR lp_running == null OR lp_running === null,  
+					set(visible,true);
+					);
+				);
+	       );
+ 
+	 	);
+</action>
+
+<action name="remove_all_the_time_tooltip_for_VR">
+	txtadd(tooltipname, 'vrtooltip_', get(name));
+	removehotspot(get(tooltipname));
+</action>
+<action name="draglayer">
+		copy(drag_currentx, x);
+		copy(drag_currenty, y);
+		copy(drag_stagex, mouse.stagex);
+		copy(drag_stagey, mouse.stagey);
+		indexoftxt(align_contains_right, get(align), 'right');
+		indexoftxt(align_contains_bottom, get(align), 'bottom');
+		calc(drag_align_x, align_contains_right GE 0 ? -1 : +1);
+		calc(drag_align_y, align_contains_bottom GE 0 ? -1 : +1);
+		asyncloop(pressed,
+			calc(x, drag_currentx + (mouse.stagex - drag_stagex)*drag_align_x);
+			calc(y, drag_currenty + (mouse.stagey - drag_stagey)*drag_align_y);
+		  );
+	</action>
+	
+	<action name="draglayer_vertically_within_parent">
+		copy(drag_currenty, y);
+		copy(drag_stagey, mouse.stagey);
+		calc(y_min, layer[get(parent)].pixelheight - pixelheight);
+		if(y_min LT 0,
+			asyncloop(pressed,
+				calc(y, drag_currenty + (mouse.stagey - drag_stagey));
+				clamp(y, get(y_min), 0);
+			  );
+		  );
+	</action>	
+	
+	<action name="close_other_layer_except">
+		copy(layer_index,%1.index);
+		for(set(i,0), i LT layer.count, inc(i),
+			if((i!=layer_index),
+			if((layer[get(i)].name EQ 'help') OR (layer[get(i)].name EQ 'help1') OR (layer[get(i)].name EQ 'help2') OR (layer[get(i)].name EQ 'help3') OR (layer[get(i)].name EQ 'help4') OR (layer[get(i)].name EQ 'help5') ,
+			tween(layer[get(i)].alpha,0);set(layer[get(i)].visible,false)))
+		);
+	</action>
+	
+<!--添加内容-->
+<plugin name="soundinterface"
+                url.flash="%SWFPATH%/plugins/soundinterface.swf"
+                url.html5="%SWFPATH%/plugins/soundinterface.js"
+                rootpath=""
+                preload="true"
+                keep="true"
+         />
+ 
+        <style name="skin_soundbutton" url="target.png"  onhover="showtext(get(text),STYLE2);" distorted="true"
+               onclick="stopallsounds();
+               if(url == target.png,
+               	playsound(get(name),get(sound),1);if(now_play != name, set(hotspot[get(now_play)].url,target.png););set(now_play,get(name)),
+               	stopsound(get(name));
+               	);
+               switch(url,target.png,target.png);"  />  
+ 
+        <textstyle name="STYLE2"
+	           font="Arial" fontsize.no-mobile="18" fontsize.mobile="28" bold="true"
+	           background="false" border="false"
+	           textcolor="0xFFFFFF"
+	           textalign="center"
+	           textshadow="0.01" textshadowrange="3" textshadowcolor="0x000000"
+	           yoffset.touch="-40"
+	           /> 
+ 
+ 
+	     <include url="%SWFPATH%/plugins/showtext.xml" />
+<!--添加内容 关于解说音频的内容-->
+
+<!-- a style for a simple textfield element -->
+				<style name="text"
+					   type="text"
+					   background="false"
+					   css="color:#FFFFFF;"
+					   enabled="false"
+					   />
+<!-- 添加内容 -->
+
+	<!-- mixed static/dynamic example - add items dynamically -->
+				<combobox name="cbscenes" design="vtour" align="rightbottom" x="10" y="10" onloaded="add_scene_items();" />
+				<action name="add_scene_items" scope="local">
+					for(set(i,0), i LT scene.count, inc(i),
+						caller.additem(calc('[img src=[dq]' + scene[get(i)].thumburl +  '[dq] style=[dq]border:1px solid rgba(255,255,255,0.5);width:48px;height:32px;vertical-align:middle;margin-right:8px;[dq]/] '+scene[get(i)].title), calc('loadscene('+i+',null,MERGE,BLEND(0.5))') );
+					);
+				</action>
+<!-- 添加的下拉场景列表	-->		
+
+<!-- 添加内容 -->	
+	<autorotated enabled="true"
+		waittime="1.0"
+		speed="60.0"
+		horizon="0.0"
+		tofov="120.0"
+		/>
+<!--	<events onmousedown="set(bt,0);" /> -->
+		<action name="bombtimer">
+		set(autorotate.enabled,true);
+		set(bt,%1);
+		add(bt,1);
+		delayedcall(bomb,1, bombtimer(get(bt)));
+		copy(bt_1,autorotate.speed);
+		Math.abs(bt_1);
+		div(bt_2,360,bt_1);
+		add(bt_2,autorotate.waittime);
+		if(bt GE bt_2, set(bt,0); nextscene(););
+		</action>
+		<action name="nextscene">
+		set(ns, get(scene[get(xml.scene)].index));
+		set(maxs, get(scene.count));
+		add(ns,1);
+		if(ns == maxs, set(ns,0));
+		loadscene(get(scene[get(ns)].name), null, MERGE, BLEND(1.5));
+		</action>
+		<!-- 下拉表 -->
+		<combobox name="cbsettings" design="vtour" align="righttop" x="10" y="10" >
+			<item name="item1" caption="开启自动浏览"       onclick="set(autorotate.enabled,true);if(autorotated.enabled,bombtimer(0));" />
+			<item name="item2" caption="关闭自动浏览"       onclick="if(autorotate.enabled,set(autorotate.enabled,false);stopdelayedcall(bomb));" />
+		</combobox>
+<!-- 自动浏览下拉表 -->
+<!-- 0 -->
+	<scene name="scene_quanjing" title="图书馆全貌" onstart="activatespot(40)" havevrimage="true" thumburl="panos/quanjing.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="-29.342" vlookat="-5.346" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/quanjing.tiles/preview.jpg" />
+
+		<image type="CUBE" multires="true" tilesize="512" if="!webvr.isenabled">
+			<level tiledimagewidth="2560" tiledimageheight="2560">
+				<cube url="panos/quanjing.tiles/%s/l3/%v/l3_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="1280" tiledimageheight="1280">
+				<cube url="panos/quanjing.tiles/%s/l2/%v/l2_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="640" tiledimageheight="640">
+				<cube url="panos/quanjing.tiles/%s/l1/%v/l1_%s_%v_%h.jpg" />
+			</level>
+		</image>
+
+		<image stereo="true" stereolabels="1|2" if="webvr.isenabled">
+			<cube url="panos/quanjing.tiles/vr/pano_%t_%s.jpg" />
+		</image>
+
+
+		<!-- 图层-->
+		<!-- 图书馆文字介绍图层 -->
+		<layer name="help" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false));pausesoundtoggle(bgsnd);"   /> 
+			<layer name="textarea" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext">
+			[b]图书馆外[/b][br/]
+			[b]·[/b]华中科技大学图书馆现设主馆、医学分馆、东区分馆三个馆区，馆舍总面积64581平方米。[br/]
+			[b]·[/b]主馆地处主校区中心地带，右边的建筑为C区，由邵逸夫先生捐助建成并题写“图书馆”3个大字，师生通常称呼为“逸夫馆”，建筑面积15320平方米；[br/]
+			[b]·[/b]左边的银灰色建筑是B区，2014年投入使用，建筑面积24599平方米。[br/]
+			[b]·[/b]截至2020年12月31日，馆藏文献总量为1185.07万册。[br/]医学古籍特藏是馆藏特色之一，三种古籍入选《国家珍贵古籍名录》。[br/]
+			现有中、外文数据库571个，数据库总量在全国高校名列前茅。[br/]
+		</data>
+<!-- 图层-->
+		<layer name="video" url.html5="plugins/videoplayer.js" url.flash="plugins/videoplayer.swf" videourl="%SWFPATH%/video/notice.mp4" posterurl="%SWFPATH%/pics/notice.png" align="center" x="0" y="0" pausedonstart="true" loop="false" directionalsound="true" volume="0.6" alpha="0" visible="false" height="90%" width="prop" onclick="togglepause()"
+					onover="
+					set(iszoom, true);
+					set(startzoom, true);
+					copy(copy_mousefovchange, control.mousefovchange);
+					copy(copy_touchzoom, control.touchzoom);
+					set(control.mousefovchange, 0);
+					set(control.touchzoom, false);
+				"
+				onout="
+					set(iszoom, false);
+					copy(control.mousefovchange, copy_mousefovchange);
+					copy(control.touchzoom, copy_touchzoom);
+				"
+				ondown.touch="onover();"
+				onup.touch="onout();"						
+				>
+				<layer name="close"  url="skin/shut.png"  align="righttop" width="prop" height="5%" ondown="layer[video].stop(notice.mp4);tween(layer[video].alpha,0);delayedcall(0.5,set(layer[video].visible,false))" />
+		</layer>
+		<!-- 视频缩放 -->
+		<!-- mouse wheel event for zooming -->
+		<events name="image_zoom_events"  onmousewheel="image_onmousewheel();"  keep="false"/>
+
+		<!-- the action for zooming either via the mouse wheel for via touch gestures -->
+		<action name="image_onmousewheel">
+			if(iszoom,
+				if(wheeldelta_touchscale GT 0,
+					<!-- touch zoom -->
+					if(startzoom,
+						set(startzoom,false);
+						copy(start_wheeldelta_touchscale, wheeldelta_touchscale);
+						copy(start_imagescale, layer[video].scale);
+					  );
+
+					div(tmp, wheeldelta_touchscale, start_wheeldelta_touchscale);
+					mul(layer[video].scale, start_imagescale, tmp);
+					if(layer[video].scale GT 1.5,set(layer[video].scale,1.5));
+					if(layer[video].scale LT 0.1,set(layer[video].scale,0.1));
+				  ,
+					<!-- mouse wheel zoom -->
+					mul(sit,get(wheeldelta),0.05);
+					mul(sit,layer[video].scale);
+					add(layer[video].scale,sit);
+					if(layer[video].scale GT 2.0,set(layer[video].scale,2.0));
+					if(layer[video].scale LT 0.1,set(layer[video].scale,0.1));
+				  );
+			);
+		</action>
+	<action name="bgsndmusic">
+		playsound(bgsnd, '%SWFPATH%/sound/1.mp3', 1);
+	</action>
+		<hotspot name="spot4" style="skin_hotspotstyle3" ath="-1.067" atv="0.744" linkedscene="scene_lao_0" />
+		<hotspot name="spot5" style="skin_hotspotstyle3" ath="-55.328" atv="-2.447" linkedscene="scene_xin_0" />
+		<hotspot name="spot8" style="skin_hotspotstyle3" ath="185" atv="0.744" linkedscene="scene_chaxinzhanmenkou" />
+		<hotspot name="spot9" style="skin_hotspotstyle7" ath="3.461" atv="-6.686" onclick="pausesoundtoggle(bgsnd);" text="声音关闭"/>
+
+		<hotspot name="spot6" style="skin_hotspotstyle2" ath="-0.559" atv="-13.151" onclick="close_other_layer_except(layer[help]);if(layer[help].visible,tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false)) ,set(layer[help].visible,true);tween(layer[help].alpha,1) ); bgsndmusic();" text="图书馆介绍"/>
+		<hotspot name="spot7" url="%SWFPATH%/skin/media_playback_start.png" scale="0.5" zoom="true" ath="-25.386" atv="12.492" onover="tween(scale,0.64);add_all_the_time_tooltip_for_VR"
+				   onout="tween(scale,0.6);remove_all_the_time_tooltip_for_VR" onclick="layer[video].stop(notice.mp4);if(layer[video].visible,tween(layer[video].alpha,0);delayedcall(0.5,set(layer[video].visible,false)) ,set(layer[video].visible,true);tween(layer[video].alpha,1) );" text="图书馆注意事项视频播放与关闭"/>	
+		
+	</scene>
+	
+<!-- <events name="mouse_event" keep="true" -->
+		        <!-- onclick=""   -->
+		        <!-- onsingleclick="" -->
+		        <!-- ondoubleclick="" -->
+		        <!-- onmousedown="show_anger()" -->
+		        <!-- onmouseup="" -->
+		        <!-- onmousewheel="" -->
+		        <!-- oncontextmenu="" -->
+		        <!-- onidle="" -->
+		        <!-- onviewchange="" -->
+		        <!-- onviewchanged="" -->
+		        <!-- onresize="" -->
+		        <!-- onautorotatestart="" -->
+		        <!-- onautorotatestop="" -->
+		        <!-- onautorotateoneround="" -->
+		        <!-- onautorotatechange="" -->
+		        <!-- /> -->
+	<!-- <action name="show_anger"> -->
+		<!-- showlog(); -->
+		<!-- screentosphere(mouse.x, mouse.y, toh, tov); -->
+		<!-- trace(get(toh)); -->
+		<!-- trace(get(tov)); -->
+	<!-- </action> -->
+	<action name="close_map">
+			add(last_width,layer[mapcontainer].width,0);
+			set(layer[jiantou].url,"%FIRSTXML%/skin/you.png");
+			set(layer[jiantou].onclick,"open_map();");
+			if(layer[mapcontainer].width GT 0,delayedcall(0.001,map_shift_left()););
+	</action>
+	<action name="open_map">
+			set(layer[jiantou].url,"%FIRSTXML%/skin/zuo.png");
+			set(layer[jiantou].onclick,"close_map();");
+			if(layer[mapcontainer].width LE 0,delayedcall(0.001,map_shift_right()););
+
+	</action>
+	
+	<action name="map_shift_left">
+		if(layer[mapcontainer].width GE 10,sub(layer[mapcontainer].width,layer[mapcontainer].width,50);delayedcall(0.001,map_shift_left()););
+		if(layer[mapcontainer].width LT 10,set(layer[mapcontainer].width,0););
+		
+	</action>
+	
+	<action name="map_shift_right">
+		trace(get(last_width));
+		if(layer[mapcontainer].width LE last_width-10,add(layer[mapcontainer].width,layer[mapcontainer].width,50);delayedcall(0.001,map_shift_right()););
+		if(layer[mapcontainer].width GE last_width-10,add(layer[mapcontainer].width,last_width,0););
+		
+	</action>
+<!-- 1 -->
+	<scene name="scene_lao_0" title="图书馆C区正门" onstart="activatespot(25)" havevrimage="true" thumburl="panos/lao_0.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="-30.761" vlookat="-19.592" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/lao_0.tiles/preview.jpg" />
+
+		<image type="CUBE" multires="true" tilesize="512" if="!webvr.isenabled">
+			<level tiledimagewidth="2560" tiledimageheight="2560">
+				<cube url="panos/lao_0.tiles/%s/l3/%v/l3_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="1280" tiledimageheight="1280">
+				<cube url="panos/lao_0.tiles/%s/l2/%v/l2_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="640" tiledimageheight="640">
+				<cube url="panos/lao_0.tiles/%s/l1/%v/l1_%s_%v_%h.jpg" />
+			</level>
+		</image>
+
+		<image stereo="true" stereolabels="1|2" if="webvr.isenabled">
+			<cube url="panos/lao_0.tiles/vr/pano_%t_%s.jpg" />
+		</image>
+		<hotspot name="spot4" style="skin_hotspotstyle3" ath="-30.222" atv="0.491" linkedscene="scene_C_dating" linkedscene_lookat="62,-2"/>
+		<hotspot name="spot5" style="skin_hotspotstyle3" ath="-172.210" atv="1.903" linkedscene="scene_quanjing" />
+		<hotspot name="spot6" style="skin_hotspotstyle3" ath="-114.380" atv="0.511" linkedscene="scene_xin_0" />
+
+	</scene>
+	
+<!-- 2 -->
+	<scene name="scene_C_dating" title="C区一楼大厅" onstart="activatespot(295)" havevrimage="true" thumburl="panos/Cdating.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="-88" vlookat="22" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/Cdating.tiles/preview.jpg" />
+
+		<image>
+			<cube url="panos/Cdating.tiles/pano_%s.jpg" />
+		</image>
+		
+		 <!-- 图层-->
+		<layer name="help" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false));pausesoundtoggle(bgsnd);"   /> 
+			<layer name="textarea" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext">
+			[b]C区大厅：[/b]全馆现有可用座位6000多个，设有阅览室32个，服务全体教职工、服务全校近7万多全日制在校生。[br/]
+			进馆读者日均近万次，印证了“学在华中大”的称誉。[br/]
+			C区主要是阅览区，2到5楼分别涵盖了自然科学图书、社会科学图书、期刊现刊、工具书等。[br/]
+		</data>
+
+		<!-- 图层-->
+		<layer name="help1" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut1"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help1].alpha,0);delayedcall(0.5,set(layer[help1].visible,false))"   /> 
+			<layer name="textarea1" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text1" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext1" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext1">
+			[b]文献资源建设部：[/b]负责纸质和电子文献的订购和入藏、学位论文收藏、读者荐书、图书捐赠等。[br/]
+			[b]·C113论文验收室：[/b]接收校内博士和硕士论文。[br/]
+			[b]·C116期刊采访室：[/b]接收图书、手稿及其它类型文献资料捐赠。[br/]
+			[b]·C118中文文献采访室：[/b]受理图书、期刊、数据库等读者推荐购买信息。[br/]
+		</data>
+		
+		<!-- 图层-->
+		<layer name="help2" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut2"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false))"   /> 
+			<layer name="textarea2" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text2" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext2" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext2">
+			[b]C区入（出）口：[/b]请刷校园卡出入图书馆，或凭有效身份证件登记入馆。[br/]
+		</data>
+		
+		<!-- 图层-->
+		<layer name="help3" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut3"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help3].alpha,0);delayedcall(0.5,set(layer[help3].visible,false))"   /> 
+			<layer name="textarea3" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text3" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext3" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext3">
+			[b]C区一楼大厅座位预约机：[/b]考研、考试周等高峰时期，图书馆常常出现一座难求的情形，为此，图书馆引进使用了座位预约系统，建议通过馆内预约机、手机或电脑提前预约座位。[br/]
+		</data>
+		
+		<!-- 图层-->
+		<layer name="help4" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut4"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help4].alpha,0);delayedcall(0.5,set(layer[help4].visible,false))"   /> 
+			<layer name="textarea4" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text4" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext4" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext4">
+			[b]华中理工大学校区模型：[/b]以1:500比例直观展示1990年华中理工大学校园全貌。[br/]
+		</data>
+		<action name="bgsndmusic">
+			playsound(bgsnd, '%SWFPATH%/sound/6.mp3', 1);
+		</action>
+		<hotspot name="spot4" style="skin_hotspotstyle3" ath="-110" atv="6" linkedscene="scene_lao_0" linkedscene_lookat="-212" />
+		<hotspot name="spot5" style="skin_hotspotstyle3" ath="-29" atv="6" linkedscene="scene_lao_1_guodao" />
+		<hotspot name="spot6" style="skin_hotspotstyle4" ath="-150" atv="4" linkedscene="scene_lao_2_zhengting" />
+		<hotspot name="spot7" style="skin_hotspotstyle4" ath="-82" atv="4" linkedscene="scene_lao_2_zhengting" />
+		<hotspot name="spot8" style="skin_hotspotstyle2" ath="-120.174" atv="13.233" onclick="close_other_layer_except(help);if(layer[help].visible,tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false)) ,set(layer[help].visible,true);tween(layer[help].alpha,1) ); bgsndmusic();" text="C区大厅文字介绍"/>
+		<hotspot name="spot9" style="skin_hotspotstyle2" ath="-171" atv="-8" onclick="close_other_layer_except(help1);if(layer[help1].visible,tween(layer[help1].alpha,0);delayedcall(0.5,set(layer[help1].visible,false)) ,set(layer[help1].visible,true);tween(layer[help1].alpha,1) )" text="文献资源建设部文字介绍"/>
+		<hotspot name="spot10" style="skin_hotspotstyle2" ath="-130.485" atv="3.374" onclick="close_other_layer_except(help2);if(layer[help2].visible,tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false)) ,set(layer[help2].visible,true);tween(layer[help2].alpha,1) )" text="C区出入口"/>
+		<hotspot name="spot11" style="skin_hotspotstyle2" ath="-122.812" atv="-7.296" onclick="close_other_layer_except(help3);if(layer[help3].visible,tween(layer[help3].alpha,0);delayedcall(0.5,set(layer[help3].visible,false)) ,set(layer[help3].visible,true);tween(layer[help3].alpha,1) )" text="C区一楼大厅座位预约机"/>
+		<hotspot name="spot12" style="skin_hotspotstyle2" ath="65" atv="12" onclick="close_other_layer_except(help4);if(layer[help4].visible,tween(layer[help4].alpha,0);delayedcall(0.5,set(layer[help4].visible,false)) ,set(layer[help4].visible,true);tween(layer[help4].alpha,1) )" text="华中理工大学校区模型"/>
+		<!-- <hotspot name="spot12" style="skin_hotspotstyle2" ath="-122.812" atv="-7.296" onclick="close_other_layer_except(help4);if(layer[help4].visible,tween(layer[help4].alpha,0);delayedcall(0.5,set(layer[help4].visible,false)) ,set(layer[help4].visible,true);tween(layer[help4].alpha,1) )" text="信息咨询部："/> -->
+		<hotspot name="spot13" style="skin_hotspotstyle7" ath="-112.243" atv="15.847" onclick="pausesoundtoggle(bgsnd);" text="C区大厅音频介绍"/>
+	
+		<hotspot name="spot15" url="skin/121.png" ath="0" atv="90" scale = "1"/>	
+	
+	</scene>
+	
+
+<!-- 3 -->
+	<scene name="scene_lao_1_guodao" title="图书馆一楼连接处" onstart="activatespot(195)" havevrimage="true" thumburl="panos/lao_1_guodao.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="64.801" vlookat="3.187" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/lao_1_guodao.tiles/preview.jpg" />
+
+		<image type="CUBE" multires="true" tilesize="512" if="!webvr.isenabled">
+			<level tiledimagewidth="2560" tiledimageheight="2560">
+				<cube url="panos/lao_1_guodao.tiles/%s/l3/%v/l3_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="1280" tiledimageheight="1280">
+				<cube url="panos/lao_1_guodao.tiles/%s/l2/%v/l2_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="640" tiledimageheight="640">
+				<cube url="panos/lao_1_guodao.tiles/%s/l1/%v/l1_%s_%v_%h.jpg" />
+			</level>
+		</image>
+
+		<image stereo="true" stereolabels="1|2" if="webvr.isenabled">
+			<cube url="panos/lao_1_guodao.tiles/vr/pano_%t_%s.jpg" />
+		</image>
+
+
+<!-- 图层-->
+		<layer name="help" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false))"   /> 
+			<layer name="textarea" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext">
+			[b]信息咨询部：[/b]提供馆际互借与文献传递、数据库使用咨询、教学与培训、学科服务、科技情报分析等服务。[br/]
+			[b]·C102文献传递室：[/b]对于我馆未收藏的文献资源，可通过馆际互借和文献传递的方式向国内外文献收藏单位申请获得。[br/]
+			[b]·C103、C104信息咨询室：[/b]围绕院系需求，依托图书馆文献信息服务平台，为学科用户开展的深层次信息服务，如学科资源推荐、定制化讲座、嵌入式教学、科研支持等。[br/]
+			提供信息素养教育教学、专题培训、新生入馆教育等。[br/]
+			[b]·C105、C107情报研究室：围绕学科建设、科学研究、人才培养、发展决策需求，提供基于事实数据、科技信息和文献资料等的定制化科技情报服务。[br/]
+		</data>
+
+<!-- 图层-->
+		<layer name="help1" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut1"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help1].alpha,0);delayedcall(0.5,set(layer[help1].visible,false))"   /> 
+			<layer name="textarea1" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text1" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext1" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext1">
+			[b]C109过刊、老报纸密集库：[/b]设有报纸阅读区。[br/]
+		</data>
+		
+		<hotspot name="spot4" style="skin_hotspotstyle3" ath="-120.728" atv="3.036" linkedscene="scene_C_dating" linkedscene_lookat="157,-17"/>
+		<hotspot name="spot5" style="skin_hotspotstyle3" ath="67.627" atv="7.514" linkedscene="scene_xin_1_zhengting" linkedscene_lookat="-248"/>	
+		<hotspot name="spot6" style="skin_hotspotstyle2" ath="-25.395" atv="-7.546" onclick="close_other_layer_except(help);if(layer[help].visible,tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false)) ,set(layer[help].visible,true);tween(layer[help].alpha,1) );" text="咨询部文字介绍"/>
+		<hotspot name="spot7" style="skin_hotspotstyle2" ath="147.018" atv="-11.972" onclick="close_other_layer_except(help1);if(layer[help1].visible,tween(layer[help1].alpha,0);delayedcall(0.5,set(layer[help1].visible,false)) ,set(layer[help1].visible,true);tween(layer[help1].alpha,1) );" text="过刊阅览室文字介绍"/>
+		<hotspot name="spot8" style="skin_hotspotstyle3" ath="-210" atv="15" linkedscene="scene_1_baozhi" />
+
+        </scene>
+
+
+
+
+
+
+
+<!-- 4 -->
+	<scene name="scene_xin_0" title="图书馆B区正门" onstart="activatespot(25)" havevrimage="true" thumburl="panos/xin_0.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="-32.807" vlookat="-7.347" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/xin_0.tiles/preview.jpg" />
+
+		<image type="CUBE" multires="true" tilesize="512" if="!webvr.isenabled">
+			<level tiledimagewidth="2560" tiledimageheight="2560">
+				<cube url="panos/xin_0.tiles/%s/l3/%v/l3_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="1280" tiledimageheight="1280">
+				<cube url="panos/xin_0.tiles/%s/l2/%v/l2_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="640" tiledimageheight="640">
+				<cube url="panos/xin_0.tiles/%s/l1/%v/l1_%s_%v_%h.jpg" />
+			</level>
+		</image>
+
+		<image stereo="true" stereolabels="1|2" if="webvr.isenabled">
+			<cube url="panos/xin_0.tiles/vr/pano_%t_%s.jpg" />
+		</image>
+		
+		<!-- 图层-->
+		<layer name="help" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false))"   /> 
+			<layer name="textarea" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext">
+			[b]B区入（出）口外：[/b]请刷校园卡出入图书馆，或凭有效身份证件登记入馆。[br/]
+		</data>
+		<hotspot name="spot4" style="skin_hotspotstyle3" ath="-32.547" atv="1.303" linkedscene="scene_xin_1_menkou" />
+		<hotspot name="spot5" style="skin_hotspotstyle3" ath="58.866" atv="1.438" linkedscene="scene_lao_0" />
+		<hotspot name="spot6" style="skin_hotspotstyle3" ath="127.184" atv="0.397" linkedscene="scene_quanjing" />
+		<hotspot name="spot7" style="skin_hotspotstyle2" ath="-41.884" atv="-8.224" onclick="close_other_layer_except(help);if(layer[help].visible,tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false)) ,set(layer[help].visible,true);tween(layer[help].alpha,1) );" text="B区入（出）口"/>
+	</scene>
+
+<!-- 5 -->
+	<scene name="scene_xin_1_zhengting" title="B区一楼圆厅" onstart="activatespot(160)" havevrimage="true" thumburl="panos/yiloudating.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="0.0" vlookat="0.0" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/yiloudating.tiles/preview.jpg" />
+
+		<image>
+			<cube url="panos/yiloudating.tiles/pano_%s.jpg" />
+		</image>
+		<!-- 图层-->
+		<layer name="help" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false));pausesoundtoggle(bgsnd);"   /> 
+			<layer name="textarea" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext">
+			[b]B区入口内：[/b]进去B区首先看到的是主要的读者服务区域。[br/]
+			[b]·[/b]正前方是馆藏检索导航区、展示展览区、朗读亭等；[br/]
+			[b]·[/b]左边是咨询处、图书借还处、自助借还机、读者服务部等。[br/]
+		</data>
+		<!-- 图层-->
+		<layer name="help1" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut1"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help1].alpha,0);delayedcall(0.5,set(layer[help1].visible,false))"   /> 
+			<layer name="textarea1" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text1" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext1" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext1">
+			[b]朗读亭：[/b]是设置有录音和隔音设备的流动录音棚，录制、分享好文章。[br/]
+		</data>
+		<!-- 图层-->
+		<layer name="help2" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut2"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false));pausesoundtoggle(bgsnd1);"   /> 
+			<layer name="textarea2" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text2" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext2" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext2">
+			[b]B区圆厅：[/b]B区2-5楼是自然科学、社会科学类图书借阅区，6楼是外文图书阅览室。[br/]
+			[b]·[/b]前方左边是B105自由阅读空间，陈设有馆内多个类别的藏书、艺术类图书和当月报纸。[br/]
+			[b]·[/b]穿过走廊将到达B106物业工程部和B107密集书库。[br/]
+		</data>
+		<action name="bgsndmusic">
+			playsound(bgsnd, '%SWFPATH%/sound/3.mp3', 1);
+		</action>
+		<action name="bgsndmusic1">
+			playsound(bgsnd1, '%SWFPATH%/sound/5.mp3', 1);
+		</action>
+		<hotspot name="spot5" style="skin_hotspotstyle3" ath="-70" atv="5" linkedscene="scene_lao_1_guodao" linkedscene_lookat="244"/>
+		<hotspot name="spot6" style="skin_hotspotstyle3" ath="-164" atv="0" linkedscene="scene_B105_outdoors" />
+		<hotspot name="spot7" style="skin_hotspotstyle4" ath="-150" atv="0" linkedscene="scene_xin_2_zhengting" />
+		<hotspot name="spot8" style="skin_hotspotstyle3" ath="27" atv="10" linkedscene="scene_Xin_1_menkou" linkedscene_lookat="-29"/>
+		<hotspot name="spot9" style="skin_hotspotstyle3" ath="120" atv="10" linkedscene="scene_xin_1_jieyueji" />
+		<hotspot name="spot10" style="skin_hotspotstyle2" ath="26" atv="2" onclick="if(layer[help].visible,tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false)) ,set(layer[help].visible,true);tween(layer[help].alpha,1) );bgsndmusic();" text="B区一楼整体介绍"/>
+		<hotspot name="spot11" style="skin_hotspotstyle2" ath="130" atv="-11" onclick="if(layer[help1].visible,tween(layer[help1].alpha,0);delayedcall(0.5,set(layer[help1].visible,false)) ,set(layer[help1].visible,true);tween(layer[help1].alpha,1) )" text="朗读亭"/>
+		<hotspot name="spot12" style="skin_hotspotstyle2" ath="100" atv="1" onclick="if(layer[help2].visible,tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false)) ,set(layer[help2].visible,true);tween(layer[help2].alpha,1) );bgsndmusic1();" text="B区圆厅"/>
+		<hotspot name="spot13" style="skin_hotspotstyle7" ath="33" atv="4" onclick="pausesoundtoggle(bgsnd);" text="声音关闭"/>
+		<hotspot name="spot14" style="skin_hotspotstyle7" ath="109" atv="3" onclick="pausesoundtoggle(bgsnd1);" text="声音关闭"/>
+	</scene>
+	
+<!-- 6 -->
+		<scene name="scene_B105_outdoors" title="B105_门外" onstart="activatespot(250)" havevrimage="true" thumburl="panos/B103_outdoors.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="-271" vlookat="-10" fovtype="MFOV" fov="200" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/B103_outdoors.tiles/preview.jpg" />
+
+		<image>
+			<cube url="panos/B103_outdoors.tiles/pano_%s.jpg" />
+		</image>
+		<!-- 图层-->
+		<layer name="help2" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut2"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false))"   /> 
+			<layer name="textarea2" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text2" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext2" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext2">
+			[b]B区圆厅：[/b]B区2-5楼是自然科学、社会科学类图书借阅区，6楼是外文图书阅览室。[br/]
+			[b]·[/b]前方左边是B105自由阅读空间，陈设有馆内多个类别的藏书、艺术类图书和当月报纸。[br/]
+			[b]·[/b]穿过走廊将到达B106物业工程部和B107密集书库。[br/]
+		</data>
+		<hotspot name="spot5" style="skin_hotspotstyle3" ath="15" atv="40" linkedscene="scene_B105" linkedscene_lookat="-71"/>
+		<hotspot name="spot6" style="skin_hotspotstyle3" ath="96" atv="5" linkedscene="scene_Bhoumen" />
+		<hotspot name="spot7" style="skin_hotspotstyle3" ath="-80" atv="15" linkedscene="scene_xin_1_zhengting" />
+		<hotspot name="spot12" style="skin_hotspotstyle2" ath="-11" atv="0" onclick="if(layer[help2].visible,tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false)) ,set(layer[help2].visible,true);tween(layer[help2].alpha,1) )" text="B105阅览室"/>
+
+	</scene>	
+<!-- 7 -->
+	<scene name="scene_Bhoumen" title="B区后门" onstart="activatespot(180)" havevrimage="true" thumburl="panos/Bhoumen.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="-271" vlookat="-10" fovtype="MFOV" fov="200" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/Bhoumen.tiles/preview.jpg" />
+
+		<image>
+			<cube url="panos/Bhoumen.tiles/pano_%s.jpg" />
+		</image>
+		<!-- 图层-->
+		<layer name="help" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false))"   /> 
+			<layer name="textarea" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<!-- 图层-->
+		<layer name="help1" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut1"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help1].alpha,0);delayedcall(0.5,set(layer[help1].visible,false))"   /> 
+			<layer name="textarea1" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text1" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext1" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext">
+			[b]B106物业工程部：[/b]提供公共区域水电、门窗、空调等设施，以及卫生间等的维护服务。[br/]
+		</data>
+		<data name="testtext1">
+			[b]B107密集书库：[/b]收藏年份较久的图书，如有需要，请在借还书处登记，收到取书通知后来馆取书。[br/]
+		</data>
+		<hotspot name="spot5" style="skin_hotspotstyle3" ath="20" atv="16" linkedscene="scene_B105_outdoors" linkedscene_lookat="-75"/>
+		<hotspot name="spot6" style="skin_hotspotstyle3" ath="83" atv="20" linkedscene="scene_B105" />
+		<hotspot name="spot7" style="skin_hotspotstyle2" ath="144" atv="-6" onclick="close_other_layer_except(help);if(layer[help].visible,tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false)) ,set(layer[help].visible,true);tween(layer[help].alpha,1) )" text="B106物业工程部"/>
+		<hotspot name="spot8" style="skin_hotspotstyle2" ath="-141" atv="-2" onclick="close_other_layer_except(help1);if(layer[help1].visible,tween(layer[help1].alpha,0);delayedcall(0.5,set(layer[help1].visible,false)) ,set(layer[help1].visible,true);tween(layer[help1].alpha,1) )" text="B107密集书库"/>
+
+	</scene>	
+<!-- 8	 -->
+	<scene name="scene_1_baozhi" title="B区一楼报纸借阅室" onstart="activatespot(30)" havevrimage="true" thumburl="panos/yiloubaozhijieyueshi.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="0.0" vlookat="0.0" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/yiloubaozhijieyueshi.tiles/preview.jpg" />
+
+		<image>
+			<cube url="panos/yiloubaozhijieyueshi.tiles/pano_%s.jpg" />
+		</image>
+		<hotspot name="spot5" style="skin_hotspotstyle3" ath="-215" atv="5" linkedscene="scene_lao_1_guodao" linkedscene_lookat="-31"/>
+		
+		
+
+	</scene>
+<!-- 9 -->
+	<scene name="scene_B105" title="B105_阅览室" onstart="activatespot(10)" havevrimage="true" thumburl="panos/B103.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="-283" vlookat="-9" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/B103.tiles/preview.jpg" />
+
+		<image>
+			<cube url="panos/B103.tiles/pano_%s.jpg" />
+		</image>
+		<hotspot name="spot5" style="skin_hotspotstyle3" ath="92" atv="5" linkedscene="scene_B105_outdoors" linkedscene_lookat="-175"/>
+		<hotspot name="spot6" style="skin_hotspotstyle3" ath="6" atv="2" linkedscene="scene_Bhoumen" linkedscene_lookat="-95"/>
+
+	</scene>	
+
+
+
+
+<!-- 10 -->
+   <scene name="scene_xin_1_jieyueji" title="B区一楼图书借阅机" onstart="activatespot(40)" havevrimage="true" thumburl="panos/xin_1_jieyueji.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="-72.651" vlookat="0.089" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/xin_1_jieyueji.tiles/preview.jpg" />
+
+		<image type="CUBE" multires="true" tilesize="512" if="!webvr.isenabled">
+			<level tiledimagewidth="2560" tiledimageheight="2560">
+				<cube url="panos/xin_1_jieyueji.tiles/%s/l3/%v/l3_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="1280" tiledimageheight="1280">
+				<cube url="panos/xin_1_jieyueji.tiles/%s/l2/%v/l2_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="640" tiledimageheight="640">
+				<cube url="panos/xin_1_jieyueji.tiles/%s/l1/%v/l1_%s_%v_%h.jpg" />
+			</level>
+		</image>
+
+<!-- 图层-->
+		<layer name="help" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false))"   /> 
+			<layer name="textarea" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext">
+			[b]自助图书消毒机：[/b]提供自助图书消毒服务。[br/]
+		</data>
+
+<!-- 图层-->
+		<layer name="help1" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut1"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help1].alpha,0);delayedcall(0.5,set(layer[help1].visible,false))"   /> 
+			<layer name="textarea1" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text1" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext1" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext1">
+			[b]自助借还机：[/b] 可刷校园卡或刷脸在自助借还机上办理图书借还手续。[br/]
+		</data>
+<!-- 图层-->
+		<layer name="video" url.html5="plugins/videoplayer.js" url.flash="plugins/videoplayer.swf" videourl="%SWFPATH%/video/lend_borrow.mp4" posterurl="%SWFPATH%/pics/lend_borrow.png" align="center" x="0" y="0" pausedonstart="true" loop="false" directionalsound="true" volume="0.6" alpha="0" visible="false" height="90%" width="prop" onclick="togglepause()"
+					onover="
+					set(iszoom, true);
+					set(startzoom, true);
+					copy(copy_mousefovchange, control.mousefovchange);
+					copy(copy_touchzoom, control.touchzoom);
+					set(control.mousefovchange, 0);
+					set(control.touchzoom, false);
+				"
+				onout="
+					set(iszoom, false);
+					copy(control.mousefovchange, copy_mousefovchange);
+					copy(control.touchzoom, copy_touchzoom);
+				"
+				ondown.touch="onover();"
+				onup.touch="onout();"						
+				>
+				<layer name="close"  url="skin/shut.png"  align="righttop" width="prop" height="5%" ondown="layer[video].stop(lend_borrow.mp4);tween(layer[video].alpha,0);delayedcall(0.5,set(layer[video].visible,false))" />
+		</layer>
+		<image stereo="true" stereolabels="1|2" if="webvr.isenabled">
+			<cube url="panos/xin_1_jieyueji.tiles/vr/pano_%t_%s.jpg" />
+		</image>
+		<!-- 视频缩放 -->
+		<!-- mouse wheel event for zooming -->
+		<events name="image_zoom_events"  onmousewheel="image_onmousewheel();"  keep="false"/>
+
+		<!-- the action for zooming either via the mouse wheel for via touch gestures -->
+		<action name="image_onmousewheel">
+			if(iszoom,
+				if(wheeldelta_touchscale GT 0,
+					<!-- touch zoom -->
+					if(startzoom,
+						set(startzoom,false);
+						copy(start_wheeldelta_touchscale, wheeldelta_touchscale);
+						copy(start_imagescale, layer[video].scale);
+					  );
+
+					div(tmp, wheeldelta_touchscale, start_wheeldelta_touchscale);
+					mul(layer[video].scale, start_imagescale, tmp);
+					if(layer[video].scale GT 1.5,set(layer[video].scale,1.5));
+					if(layer[video].scale LT 0.1,set(layer[video].scale,0.1));
+				  ,
+					<!-- mouse wheel zoom -->
+					mul(sit,get(wheeldelta),0.05);
+					mul(sit,layer[video].scale);
+					add(layer[video].scale,sit);
+					if(layer[video].scale GT 2.0,set(layer[video].scale,2.0));
+					if(layer[video].scale LT 0.1,set(layer[video].scale,0.1));
+				  );
+			);
+		</action>
+		<hotspot name="spot4" style="skin_hotspotstyle3" ath="52.744" atv="7.622" linkedscene="scene_xin_1_zhengting" linkedscene_lookat="-70"/>
+		<hotspot name="spot5" style="skin_hotspotstyle2" ath="-54.568" atv="-3.213" onclick="close_other_layer_except(help);if(layer[help].visible,tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false)) ,set(layer[help].visible,true);tween(layer[help].alpha,1) )" text="自助消毒机"/>
+		<hotspot name="spot6" style="skin_hotspotstyle2" ath="-92.351" atv="-4.737" onclick="close_other_layer_except(help1);if(layer[help1].visible,tween(layer[help1].alpha,0);delayedcall(0.5,set(layer[help1].visible,false)) ,set(layer[help1].visible,true);tween(layer[help1].alpha,1) )" text="自助借还机"/>
+		<hotspot name="spot7" url="%SWFPATH%/skin/media_playback_start.png" scale="0.5" zoom="true" ath="-77" atv="0" onover="tween(scale,0.64);add_all_the_time_tooltip_for_VR"
+	       onout="tween(scale,0.6);remove_all_the_time_tooltip_for_VR" onclick="layer[video].stop(lend_borrow.mp4);if(layer[video].visible,tween(layer[video].alpha,0);delayedcall(0.5,set(layer[video].visible,false)) ,set(layer[video].visible,true);tween(layer[video].alpha,1) );" text="借还书视频播放与关闭"/>	
+	</scene>
+
+
+   
+
+    
+
+
+
+
+<!-- 11 -->
+	<scene name="scene_Xin_1_menkou" title="B区一楼大厅" onstart="activatespot(200)" havevrimage="true" thumburl="panos/Byiloudating.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="148.484" vlookat="0.598" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/Byiloudating.tiles/preview.jpg" />
+		<image>
+			<cube url="panos/Byiloudating.tiles/pano_%s.jpg" />
+		</image>
+
+
+<!-- 图层-->
+		<layer name="help1" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut1"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help1].alpha,0);delayedcall(0.5,set(layer[help1].visible,false));pausesoundtoggle(bgsnd)"   /> 
+			<layer name="textarea1" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="guanwei" url="pics/guanwei.jpg" align="bottom" x="0" y="0" width="prop" height="20%"/>
+				<layer name="text1" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext1" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext1">
+			[b]图书馆官微：[/b] “一本好书 与你同行” 是华中科技大学图书馆2015年创立的阅读推广品牌。以落实立德树人为根本任务，以培育和践行社会主义核心价值观、弘扬中华民族优秀传统文化为主题，发挥图书馆馆舍空间宽广、环境优雅，馆藏纸、电文献资源丰富、品类齐全，在校师生读者规模庞大、读者服务范围广泛等自有优势，积极主动拓展服务领域，延伸阅读推广触角; 创新服务形式，全年全时段开展形式多样、内容丰富的全民阅读推广活动，努力培养华中科技大学师生、社区居民、社会读者阅读兴趣和习惯，为打造具有华中大特色的书香校园作出了独特的贡献。
+			关注“华中科技大学图书馆”官微，一 起来参加阅读活动吧![br/]
+		</data>
+
+<!-- 图层-->
+		<layer name="help2" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut2"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false))"   /> 
+			<layer name="textarea2" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text2" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext2" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext2">
+			[b]导航区：[/b]可自助检索馆藏文献。[br/]
+		</data>
+
+<!-- 图层-->
+		<layer name="help3" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut3"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help3].alpha,0);delayedcall(0.5,set(layer[help3].visible,false))"   /> 
+			<layer name="textarea3" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text3" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext3" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext3">
+			[b]咨询部：[/b]提供人工咨询服务。 [br/]
+		</data>
+
+<!-- 图层-->
+		<layer name="help4" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut4"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help4].alpha,0);delayedcall(0.5,set(layer[help4].visible,false))"   /> 
+			<layer name="textarea4" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text4" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext4" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext4">
+			[b]人工借还处：[/b]提供人工借还书服务。 [br/]
+		</data>
+
+
+<action name="bgsndmusic">
+		playsound(bgsnd, '%SWFPATH%/sound/4.mp3', 1);
+	</action>
+
+
+		<hotspot name="spot4" style="skin_hotspotstyle3" ath="-27.886" atv="9.187" linkedscene="scene_xin_0" />
+		<hotspot name="spot5" style="skin_hotspotstyle3" ath="149.240" atv="2.812" linkedscene="scene_xin_1_zhengting" linkedscene_lookat="214"/>
+		<hotspot name="spot6" style="skin_hotspotstyle2" ath="64.097" atv="-16.217" onclick="close_other_layer_except(help2);if(layer[help2].visible,tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false)) ,set(layer[help2].visible,true);tween(layer[help2].alpha,1) )"  text="导航区"/>
+		<hotspot name="spot7" style="skin_hotspotstyle2" ath="80.463" atv="-4.233" onclick="close_other_layer_except(help1);if(layer[help1].visible,tween(layer[help1].alpha,0);delayedcall(0.5,set(layer[help1].visible,false)) ,set(layer[help1].visible,true);tween(layer[help1].alpha,1) ); bgsndmusic();"  text="图书馆官微"/>
+		<hotspot name="spot8" style="skin_hotspotstyle2" ath="58.282" atv="-5.321" onclick="close_other_layer_except(help3);if(layer[help3].visible,tween(layer[help3].alpha,0);delayedcall(0.5,set(layer[help3].visible,false)) ,set(layer[help3].visible,true);tween(layer[help3].alpha,1) )"  text="咨询处"/>
+		<hotspot name="spot9" style="skin_hotspotstyle2" ath="96.850" atv="-5.571" onclick="close_other_layer_except(help4);if(layer[help4].visible,tween(layer[help4].alpha,0);delayedcall(0.5,set(layer[help4].visible,false)) ,set(layer[help4].visible,true);tween(layer[help4].alpha,1) )"  text="人工借还处"/>
+		<hotspot name="spot10" style="skin_hotspotstyle7" ath="82.958" atv="-7.719" onclick="pausesoundtoggle(bgsnd);" text="音频关闭"/>
+	</scene>
+
+
+
+
+<!-- 12 -->
+
+
+<scene name="scene_chaxinzhanmenkou" title="查新站门口" onstart="activatespot(10)" havevrimage="true" thumburl="panos/chaxinzhanmenkou.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="-283" vlookat="-9" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/chaxinzhanmenkou.tiles/preview.jpg" />
+
+		<image>
+			<cube url="panos/chaxinzhanmenkou.tiles/pano_%s.jpg" />
+		</image>
+		<hotspot name="spot5" style="skin_hotspotstyle3" ath="92" atv="5" linkedscene="scene_quanjing" linkedscene_lookat="-175" />
+		<hotspot name="spot6" style="skin_hotspotstyle3" ath="6" atv="2" linkedscene="scene_chaxinzhan" linkedscene_lookat="-95" />
+
+</scene>
+<!-- 13 -->
+<scene name="scene_chaxinzhan" title="查新站" onstart="activatespot(10)" havevrimage="true" thumburl="panos/chaxinzhan.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="-283" vlookat="-9" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/chaxinzhan.tiles/preview.jpg" />
+
+		<image>
+			<cube url="panos/chaxinzhan.tiles/pano_%s.jpg" />
+		</image>
+		<hotspot name="spot5" style="skin_hotspotstyle3" ath="92" atv="5" linkedscene="scene_chaxinzhanmenkou" linkedscene_lookat="-175" />
+
+</scene>	
+
+<!-- 14 -->
+	<scene name="scene_lao_2_guodao" title="图书馆二楼连接处" onstart="activatespot(220)" havevrimage="true" thumburl="panos/lao_2_guodao.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="53.604" vlookat="2.134" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/lao_2_guodao.tiles/preview.jpg" />
+
+		<image type="CUBE" multires="true" tilesize="512" if="!webvr.isenabled">
+			<level tiledimagewidth="2560" tiledimageheight="2560">
+				<cube url="panos/lao_2_guodao.tiles/%s/l3/%v/l3_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="1280" tiledimageheight="1280">
+				<cube url="panos/lao_2_guodao.tiles/%s/l2/%v/l2_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="640" tiledimageheight="640">
+				<cube url="panos/lao_2_guodao.tiles/%s/l1/%v/l1_%s_%v_%h.jpg" />
+			</level>
+		</image>
+
+		<image stereo="true" stereolabels="1|2" if="webvr.isenabled">
+			<cube url="panos/lao_2_guodao.tiles/vr/pano_%t_%s.jpg" />
+		</image>
+		<hotspot name="spot4" style="skin_hotspotstyle3" ath="-124.522" atv="3.738" linkedscene="scene_lao_2_zhengting" linkedscene_lookat="245"/>
+		<hotspot name="spot5" style="skin_hotspotstyle3" ath="55.169" atv="6.942" linkedscene="scene_xin_2_zhengting" linkedscene_lookat="147"/>
+
+	</scene>
+<!-- 15 -->
+	<scene name="scene_lao_2_zhengting" title="C区二楼大厅" onstart="activatespot(210)" havevrimage="true" thumburl="panos/C2louti.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="94.060" vlookat="3.578" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/C2louti.tiles/preview.jpg" />
+		<image>
+			<cube url="panos/C2louti.tiles/pano_%s.jpg" />
+		</image>
+		
+
+
+        <layer name="help" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false))"   /> 
+			<layer name="textarea" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext">
+			[b]C201、C202中文自科图书阅览室：[/b]可馆内阅览Q-S/TP/TQ/TS/TU/TV类中文自然科学图书。[br/]
+		</data>
+
+
+		<!-- 图层-->
+		<layer name="help2" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut2"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false))"   /> 
+			<layer name="textarea2" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text2" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext2" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext2">
+			[b]C203、C204中文自科图书阅览室：[/b]可馆内阅览N-P/T/TB/TD-TH/TJ-TN/U/V/X/Z类中文自然科学图书。[br/]
+		</data>
+
+
+		<image stereo="true" stereolabels="1|2" if="webvr.isenabled">
+			<cube url="panos/lao_2_zhengting.tiles/vr/pano_%t_%s.jpg" />
+		</image>
+		<hotspot name="spot4" style="skin_hotspotstyle5" ath="214" atv="7.073" linkedscene="scene_C_dating" />
+		<hotspot name="spot5" style="skin_hotspotstyle3" ath="235" atv="4.565" linkedscene="scene_lao_2_guodao" linkedscene_lookat="54"/>
+		<hotspot name="spot6" style="skin_hotspotstyle4" ath="326" atv="0.094" linkedscene="scene_lao_3_zhengting" />
+		<hotspot name="spot7" style="skin_hotspotstyle2" ath="234" atv="-5.793" onclick="close_other_layer_except(help);if(layer[help].visible,tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false)) ,set(layer[help].visible,true);tween(layer[help].alpha,1) )" text="C201 C202阅览室"/>
+		<hotspot name="spot8" style="skin_hotspotstyle2" ath="57" atv="-7.170" onclick="close_other_layer_except(help2);if(layer[help2].visible,tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false)) ,set(layer[help2].visible,true);tween(layer[help2].alpha,1) )" text="C203 C204阅览室"/>
+		
+	</scene>
+<!-- 16	 -->
+	<scene name="scene_xin_2_zhengting" title="B区二楼大厅" onstart="activatespot(120)" havevrimage="true" thumburl="panos/xin_2_zhengting.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="145.779" vlookat="0.623" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/xin_2_zhengting.tiles/preview.jpg" />
+
+		<image type="CUBE" multires="true" tilesize="512" if="!webvr.isenabled">
+			<level tiledimagewidth="2560" tiledimageheight="2560">
+				<cube url="panos/xin_2_zhengting.tiles/%s/l3/%v/l3_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="1280" tiledimageheight="1280">
+				<cube url="panos/xin_2_zhengting.tiles/%s/l2/%v/l2_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="640" tiledimageheight="640">
+				<cube url="panos/xin_2_zhengting.tiles/%s/l1/%v/l1_%s_%v_%h.jpg" />
+			</level>
+		</image>
+
+
+        <layer name="help" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false))"   /> 
+			<layer name="textarea" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext">
+			[b]读者交流空间：[/b]可进行学习、阅读和交流等活动。[br/]
+		</data>
+
+		<!-- 图层-->
+		<layer name="help2" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut1"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false))"   /> 
+			<layer name="textarea1" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text1" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext2" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext2">
+			[b]新书展示区：[/b]新书展示及阅览区域。[br/]
+		</data>
+
+
+        <!-- 图层-->
+		<layer name="help3" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut2"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help3].alpha,0);delayedcall(0.5,set(layer[help3].visible,false))"   /> 
+			<layer name="textarea2" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text2" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext3" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext3">
+			[b]B209、B210中文自科图书借阅室：[/b]可借阅TP/TQ/TS/TU/TV/U/V/X/Z等类别中文自然科学图书。[br/]
+		</data>
+
+		<image stereo="true" stereolabels="1|2" if="webvr.isenabled">
+			<cube url="panos/xin_2_zhengting.tiles/vr/pano_%t_%s.jpg" />
+		</image>
+		<hotspot name="spot4" style="skin_hotspotstyle3" ath="-34.267" atv="4.861" linkedscene="scene_lao_2_guodao" linkedscene_lookat="228"/>
+		<hotspot name="spot5" style="skin_hotspotstyle4" ath="-102.380" atv="-8.416" linkedscene="scene_xin_3_zhengting" />
+		<hotspot name="spot6" style="skin_hotspotstyle5" ath="-102.359" atv="0.836" linkedscene="scene_xin_1_zhengting" />
+		<hotspot name="spot7" style="skin_hotspotstyle2" ath="101.779" atv="-3.616" onclick="close_other_layer_except(help);if(layer[help].visible,tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false)) ,set(layer[help].visible,true);tween(layer[help].alpha,1) )" text="读者交流区"/>
+		<hotspot name="spot8" style="skin_hotspotstyle2" ath="147.720" atv="-2.805" onclick="close_other_layer_except(help2);if(layer[help2].visible,tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false)) ,set(layer[help2].visible,true);tween(layer[help2].alpha,1) )" text="新书展示区"/>
+		<hotspot name="spot9" style="skin_hotspotstyle2" ath="-147.337" atv="-6.511" onclick="close_other_layer_except(help3);if(layer[help3].visible,tween(layer[help3].alpha,0);delayedcall(0.5,set(layer[help3].visible,false)) ,set(layer[help3].visible,true);tween(layer[help3].alpha,1) )" text="B209 B210阅览室"/>
+
+
+
+
+	</scene>
+
+
+
+
+  <!-- 17 -->
+	<scene name="scene_lao_3_guodao" title="图书馆三楼连接处" onstart="activatespot(40)" havevrimage="true" thumburl="panos/lao_3_guodao.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="0.0" vlookat="0.0" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/lao_3_guodao.tiles/preview.jpg" />
+
+		<image type="CUBE" multires="true" tilesize="512" if="!webvr.isenabled">
+			<level tiledimagewidth="2560" tiledimageheight="2560">
+				<cube url="panos/lao_3_guodao.tiles/%s/l3/%v/l3_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="1280" tiledimageheight="1280">
+				<cube url="panos/lao_3_guodao.tiles/%s/l2/%v/l2_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="640" tiledimageheight="640">
+				<cube url="panos/lao_3_guodao.tiles/%s/l1/%v/l1_%s_%v_%h.jpg" />
+			</level>
+		</image>
+
+		<image stereo="true" stereolabels="1|2" if="webvr.isenabled">
+			<cube url="panos/lao_3_guodao.tiles/vr/pano_%t_%s.jpg" />
+		</image>
+		<hotspot name="spot4" style="skin_hotspotstyle3" ath="-121.144" atv="4.146" linkedscene="scene_xin_3_zhengting" linkedscene_lookat="235"/>
+		<hotspot name="spot5" style="skin_hotspotstyle3" ath="59.452" atv="10.209" linkedscene="scene_lao_3_zhengting" linkedscene_lookat="60"/>
+
+	</scene>
+<!-- 18 -->
+	<scene name="scene_lao_3_zhengting" title="C区三楼大厅" onstart="activatespot(35)" havevrimage="true" thumburl="panos/C3louti.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="0.0" vlookat="0.0" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/C3louti.tiles/preview.jpg" />
+
+		<image>
+			<cube url="panos/C3louti.tiles/pano_%s.jpg" />
+		</image>
+
+
+        <layer name="help" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false))"   /> 
+			<layer name="textarea" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext">
+			[b]C301、C302中文社科图书阅览室：[/b]可馆内阅览A-E类中文社会科学图书。[br/]
+		</data>
+
+		<!-- 图层-->
+		<layer name="help2" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut2"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false))"   /> 
+			<layer name="textarea2" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text2" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext2" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext2">
+			[b]C303、C304中文社科图书阅览室：[/b]可馆内阅览F-H类中文社会科学图书。[br/]
+		</data>
+
+
+
+		<image stereo="true" stereolabels="1|2" if="webvr.isenabled">
+			<cube url="panos/lao_3_zhengting.tiles/vr/pano_%t_%s.jpg" />
+		</image>
+		<hotspot name="spot4" style="skin_hotspotstyle5" ath="-56.450" atv="9.003" linkedscene="scene_lao_2_zhengting" />
+		<hotspot name="spot5" style="skin_hotspotstyle4" ath="-29.310" atv="-3.063" linkedscene="scene_lao_4_zhengting" />
+		<hotspot name="spot6" style="skin_hotspotstyle3" ath="-120.287" atv="1.385" linkedscene="scene_lao_3_guodao" linkedscene_lookat="240"/>
+		<hotspot name="spot7" style="skin_hotspotstyle2" ath="-119.122" atv="-7.170" onclick="close_other_layer_except(help);if(layer[help].visible,tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false)) ,set(layer[help].visible,true);tween(layer[help].alpha,1) )" text="C301 C302阅览室"/>
+		<hotspot name="spot8" style="skin_hotspotstyle2" ath="58.887" atv="-4.810" onclick="close_other_layer_except(help2);if(layer[help2].visible,tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false)) ,set(layer[help2].visible,true);tween(layer[help2].alpha,1) )" text="C303 C304阅览室"/>
+
+	</scene>
+<!-- 19	 -->
+	<scene name="scene_xin_3_zhengting" title="B区三楼大厅" onstart="activatespot(35)" havevrimage="true" thumburl="panos/xin_3_zhengting.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="0.0" vlookat="0.0" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/xin_3_zhengting.tiles/preview.jpg" />
+
+		<image type="CUBE" multires="true" tilesize="512" if="!webvr.isenabled">
+			<level tiledimagewidth="2560" tiledimageheight="2560">
+				<cube url="panos/xin_3_zhengting.tiles/%s/l3/%v/l3_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="1280" tiledimageheight="1280">
+				<cube url="panos/xin_3_zhengting.tiles/%s/l2/%v/l2_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="640" tiledimageheight="640">
+				<cube url="panos/xin_3_zhengting.tiles/%s/l1/%v/l1_%s_%v_%h.jpg" />
+			</level>
+		</image>
+
+        <layer name="help" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false))"   /> 
+			<layer name="textarea" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext">
+			[b]B301-312行政办公区域：[/b]图书馆的主要行政办公区域，接待各类读者咨询、建议。[br/]
+		</data>
+         
+        <!-- 图层-->
+		<layer name="help2" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut2"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false))"   /> 
+			<layer name="textarea2" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text2" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext2" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext2">
+			[b]B313、B314中文自科图书借阅室：[/b]可借阅N-T/TB/TD-TH/TJ-TN等中文自然科学图书。[br/]
+		</data>
+
+
+
+
+		<image stereo="true" stereolabels="1|2" if="webvr.isenabled">
+			<cube url="panos/xin_3_zhengting.tiles/vr/pano_%t_%s.jpg" />
+		</image>
+		<hotspot name="spot4" style="skin_hotspotstyle5" ath="26.881" atv="2.833" linkedscene="scene_xin_2_zhengting" />
+		<hotspot name="spot5" style="skin_hotspotstyle4" ath="-5.266" atv="1.115" linkedscene="scene_4Fzoulang" />
+		<hotspot name="spot6" style="skin_hotspotstyle3" ath="56.623" atv="4.794" linkedscene="scene_lao_3_guodao" linkedscene_lookat="55"/>
+		<hotspot name="spot7" style="skin_hotspotstyle2" ath="-146.411" atv="-7.266" onclick="close_other_layer_except(help);if(layer[help].visible,tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false)) ,set(layer[help].visible,true);tween(layer[help].alpha,1) )" text="B301-B302行政办公区"/>
+		<hotspot name="spot8" style="skin_hotspotstyle2" ath="-42.412" atv="-3.821" onclick="close_other_layer_except(help2);if(layer[help2].visible,tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false)) ,set(layer[help2].visible,true);tween(layer[help2].alpha,1) )" text="B313 B314阅览室"/>
+
+	</scene>
+
+
+
+
+
+
+
+    
+
+<!-- 20 -->
+	<scene name="scene_xin_4_yuelanshi" title="B区四楼阅览室" onstart="activatespot(25)" havevrimage="true" thumburl="panos/xin_4_yuelanshi.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="0.0" vlookat="0.0" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/xin_4_yuelanshi.tiles/preview.jpg" />
+
+		<image type="CUBE" multires="true" tilesize="512" if="!webvr.isenabled">
+			<level tiledimagewidth="2560" tiledimageheight="2560">
+				<cube url="panos/xin_4_yuelanshi.tiles/%s/l3/%v/l3_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="1280" tiledimageheight="1280">
+				<cube url="panos/xin_4_yuelanshi.tiles/%s/l2/%v/l2_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="640" tiledimageheight="640">
+				<cube url="panos/xin_4_yuelanshi.tiles/%s/l1/%v/l1_%s_%v_%h.jpg" />
+			</level>
+		</image>
+
+		<image stereo="true" stereolabels="1|2" if="webvr.isenabled">
+			<cube url="panos/xin_4_yuelanshi.tiles/vr/pano_%t_%s.jpg" />
+		</image>
+		<hotspot name="spot4" style="skin_hotspotstyle3" ath="159.366" atv="3.078" linkedscene="scene_4Fzoulang" linkedscene_lookat="60"/>
+		<hotspot name="spot3" style="skin_hotspotstyle3" ath="-35" atv="14" linkedscene="scene_B403" linkedscene_lookat="60" />
+		<hotspot name="spot5" style="skin_hotspotstyle4" ath="118.402" atv="1.573" linkedscene="scene_xin_5_yuelanshi" />
+
+	</scene>
+
+
+<!-- 21	 -->
+	<scene name="scene_4Fzoulang" title="B区4楼走廊" onstart="activatespot(120)" havevrimage="true" thumburl="panos/4Fzoulang.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="0.0" vlookat="0.0" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/4Fzoulang.tiles/preview.jpg" />
+
+		<image>
+			<cube url="panos/4Fzoulang.tiles/pano_%s.jpg" />
+		</image>
+		<hotspot name="spot4" style="skin_hotspotstyle4" ath="-31" atv="6" linkedscene="scene_xin_5_zhengting" />
+		<hotspot name="spot5" style="skin_hotspotstyle5" ath="-9" atv="6" linkedscene="scene_xin_3_zhengting" />
+		<hotspot name="spot6" style="skin_hotspotstyle3" ath="-117" atv="4" linkedscene="scene_xin_4_yuelanshi" linkedscene_lookat="-20"/>
+		<hotspot name="spot8" style="skin_hotspotstyle3" ath="-130" atv="9.309" linkedscene="scene_4Fyuelanshi" linkedscene_lookat="50"/>
+		<hotspot name="spot7" style="skin_hotspotstyle3" ath="40" atv="22" linkedscene="scene_xin_4_dianzi" linkedscene_lookat="326"/>
+	</scene>
+
+<!-- 22 -->
+	<scene name="scene_4Fyuelanshi" title="B区4楼阅览室" onstart="activatespot(210)" havevrimage="true" thumburl="panos/4Fyuelanshi.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="0.0" vlookat="0.0" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/4Fyuelanshi.tiles/preview.jpg" />
+
+		<image>
+			<cube url="panos/4Fyuelanshi.tiles/pano_%s.jpg" />
+		</image>
+		<!-- 图层-->
+		<layer name="help1" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut1"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help1].alpha,0);delayedcall(0.5,set(layer[help1].visible,false))"   /> 
+			<layer name="textarea1" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text1" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext1" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext1">
+			[b]B402、B403中文社科图书借阅室：[/b]可借阅G-K类中文自然科学图书。[br/]
+		</data>
+		<hotspot name="spot4" style="skin_hotspotstyle3" ath="-123" atv="15" linkedscene="scene_4Fzoulang" linkedscene_lookat="-114"/>
+		<hotspot name="spot6" style="skin_hotspotstyle2" ath="133" atv="0" onclick="close_other_layer_except(help1);if(layer[help1].visible,tween(layer[help1].alpha,0);delayedcall(0.5,set(layer[help1].visible,false)) ,set(layer[help1].visible,true);tween(layer[help1].alpha,1) )" text="B402、B403中文社科图书借阅室"/>				
+	</scene>
+
+
+
+	
+<!-- 23 -->
+	<scene name="scene_xin_4_dianzi" title="B区四楼电子阅览室" onstart="activatespot(215)" havevrimage="true" thumburl="panos/xin_4_dianzi.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="240" vlookat="20" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/xin_4_dianzi.tiles/preview.jpg" />
+
+		<image type="CUBE" multires="true" tilesize="512" if="!webvr.isenabled">
+			<level tiledimagewidth="2560" tiledimageheight="2560">
+				<cube url="panos/xin_4_dianzi.tiles/%s/l3/%v/l3_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="1280" tiledimageheight="1280">
+				<cube url="panos/xin_4_dianzi.tiles/%s/l2/%v/l2_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="640" tiledimageheight="640">
+				<cube url="panos/xin_4_dianzi.tiles/%s/l1/%v/l1_%s_%v_%h.jpg" />
+			</level>
+		</image>
+
+
+		<image stereo="true" stereolabels="1|2" if="webvr.isenabled">
+			<cube url="panos/xin_4_shujia.tiles/vr/pano_%t_%s.jpg" />
+		</image>
+		<layer name="help" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false))"   /> 
+			<layer name="textarea" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext">
+			[b]B401电子阅览室：[/b]可凭校园卡刷卡上机，输入校园卡号和查询密码进入操作系统。[br/]
+		</data>
+		<!-- 图层-->
+		<layer name="help1" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut1"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help1].alpha,0);delayedcall(0.5,set(layer[help1].visible,false))"   /> 
+			<layer name="textarea1" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text1" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext1" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext1">
+			[b]B401视听室：[/b]进行各类观影分享活动。[br/]
+		</data>
+		<hotspot name="spot4" style="skin_hotspotstyle3" ath="149.445" atv="3.914" linkedscene="scene_4Fzoulang" linkedscene_lookat="-113"/>
+		<hotspot name="spot5" style="skin_hotspotstyle2" ath="-119" atv="0" onclick="close_other_layer_except(help);if(layer[help].visible,tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false)) ,set(layer[help].visible,true);tween(layer[help].alpha,1) )" text="B401电子阅览室"/>
+		<hotspot name="spot6" style="skin_hotspotstyle2" ath="61" atv="0" onclick="close_other_layer_except(help1);if(layer[help1].visible,tween(layer[help1].alpha,0);delayedcall(0.5,set(layer[help1].visible,false)) ,set(layer[help1].visible,true);tween(layer[help1].alpha,1) )" text="B401视听室"/>
+
+		
+
+	</scene>
+	
+
+<!-- 24 -->
+	<scene name="scene_lao_4_yuelanshi" title="C区四楼阅览室" onstart="activatespot(-50)" havevrimage="true" thumburl="panos/C403.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="0.0" vlookat="0.0" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/C403.tiles/preview.jpg" />
+
+		<image>
+			<cube url="panos/C403.tiles/pano_%s.jpg" />
+		</image>
+
+		<image stereo="true" stereolabels="1|2" if="webvr.isenabled">
+			<cube url="panos/lao_4_yuelanshi.tiles/vr/pano_%t_%s.jpg" />
+		</image>
+		<hotspot name="spot4" style="skin_hotspotstyle3" ath="148.482" atv="7.468" linkedscene="scene_lao_4_zhengting" linkedscene_lookat="240"/>
+	</scene>
+
+<!-- 25 -->
+	<scene name="scene_lao_4_zhengting" title="C区四楼大厅" onstart="activatespot(205)" havevrimage="true" thumburl="panos/C4louti.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="0.0" vlookat="0.0" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/C4louti.tiles/preview.jpg" />
+
+		
+		<image>
+			<cube url="panos/C4louti.tiles/pano_%s.jpg" />
+		</image>
+
+
+        <layer name="help" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false))"   /> 
+			<layer name="textarea" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext">
+			[b]C401-402中外文过刊阅览室：[/b]可馆内阅览中外文过刊。[br/]
+		</data>
+
+		<!-- 图层-->
+		<layer name="help2" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut2"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false))"   /> 
+			<layer name="textarea2" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text2" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext2" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext2">
+			[b]C403-404中外文现刊阅览室：[/b]可馆内阅览当年中外文期刊。[/b]
+		</data>
+
+
+
+		<image stereo="true" stereolabels="1|2" if="webvr.isenabled">
+			<cube url="panos/lao_4_zhengting.tiles/vr/pano_%t_%s.jpg" />
+		</image>
+		<hotspot name="spot4" style="skin_hotspotstyle5" ath="123.064" atv="9.412" linkedscene="scene_lao_3_zhengting" />
+		<hotspot name="spot5" style="skin_hotspotstyle4" ath="152.473" atv="-4.258" linkedscene="scene_lao_5_zhengting" />
+		<hotspot name="spot6" style="skin_hotspotstyle3" ath="62.407" atv="4.474" linkedscene="scene_lao_4_yuelanshi" linkedscene_lookat="10"/>
+		<hotspot name="spot7" style="skin_hotspotstyle2" ath="61.883" atv="-4.595" onclick="close_other_layer_except(help);if(layer[help].visible,tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false)) ,set(layer[help].visible,true);tween(layer[help].alpha,1) )" text="C401 C402阅览室"/>
+		<hotspot name="spot8" style="skin_hotspotstyle2" ath="-116.742" atv="-7.345" onclick="close_other_layer_except(help2);if(layer[help2].visible,tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false)) ,set(layer[help2].visible,true);tween(layer[help2].alpha,1) )" text="C403 C404阅览室"/>
+
+	</scene>
+	
+<!-- 26 -->
+ <scene name="scene_B403" title="B区403" onstart="activatespot(125)" havevrimage="true" thumburl="panos/B403.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="0.0" vlookat="0.0" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/B403.tiles/preview.jpg" />
+
+		<image>
+			<cube url="panos/B403.tiles/pano_%s.jpg" />
+		</image>
+		
+		<hotspot name="spot4" style="skin_hotspotstyle3" ath="70" atv="10" linkedscene="scene_xin_4_yuelanshi" linkedscene_lookat="-55"/>
+	</scene>
+<!-- 27 -->
+<scene name="scene_xin_5_zhengting" title="B区五楼正厅" onstart="activatespot(-70)" havevrimage="true" thumburl="panos/5Fdiantikou.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="0.0" vlookat="0.0" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/5Fdiantikou.tiles/preview.jpg" />
+
+		<image>
+			<cube url="panos/5Fdiantikou.tiles/pano_%s.jpg" />
+		</image>
+		<layer name="help" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false))"   /> 
+			<layer name="textarea" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext">
+			[b]B501学术报告厅：[/b]面向校内开放，可组织各类培训、讲座、研讨等活动。[br/]
+		</data>
+		
+		<hotspot name="spot5" style="skin_hotspotstyle3" ath="67" atv="8" linkedscene="scene_xin_5_yuelanshi_502" linkedscene_lookat="-55"/>
+		<hotspot name="spot6" style="skin_hotspotstyle3" ath="79" atv="2" linkedscene="scene_xin_5_yuelanshi_outdoor" linkedscene_lookat="-119"/>
+		<hotspot name="spot7" style="skin_hotspotstyle5" ath="-194" atv="0" linkedscene="scene_4Fzoulang" />
+		<hotspot name="spot8" style="skin_hotspotstyle2" ath="-128" atv="-2" onclick="close_other_layer_except(help);if(layer[help].visible,tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false)) ,set(layer[help].visible,true);tween(layer[help].alpha,1) )" text="B501学术报告厅"/>
+	</scene>
+<!-- 28 -->
+	<scene name="scene_xin_5_yuelanshi_502" title="B区五楼阅览室502" onstart="activatespot(-30)" havevrimage="true" thumburl="panos/5Fyuelanshi.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="0.0" vlookat="0.0" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/5Fyuelanshi.tiles/preview.jpg" />
+
+		<image>
+			<cube url="panos/5Fyuelanshi.tiles/pano_%s.jpg" />
+		</image>
+		<layer name="help" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false))"   /> 
+			<layer name="textarea" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext">
+			[b]B502、B503外文、工具书和中文社科图书借阅室：[/b]可借阅外文、工具书和A-F类中文社会科学图书。[br/]
+		</data>
+		<hotspot name="spot6" style="skin_hotspotstyle3" ath="123" atv="8" linkedscene="scene_xin_5_zhengting" linkedscene_lookat="70"/>
+		<hotspot name="spot7" style="skin_hotspotstyle3" ath="20" atv="12" linkedscene="scene_xin_5_yuelanshi_503" linkedscene_lookat="90"/>
+		<hotspot name="spot8" style="skin_hotspotstyle2" ath="62" atv="1" onclick="close_other_layer_except(help);if(layer[help].visible,tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false)) ,set(layer[help].visible,true);tween(layer[help].alpha,1) )" text="B502、B503外文、工具书和中文社科图书借阅室"/>		
+	</scene>
+<!-- 29	 -->
+   <scene name="scene_xin_5_yuelanshi_503" title="B区五楼阅览室503" onstart="activatespot(-5)" havevrimage="true" thumburl="panos/B503.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="0.0" vlookat="0.0" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/B503.tiles/preview.jpg" />
+
+		<image>
+			<cube url="panos/B503.tiles/pano_%s.jpg" />
+		</image>
+		<layer name="help" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false))"   /> 
+			<layer name="textarea" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext">
+			[b]B502、B503外文、工具书和中文社科图书借阅室：[/b]可借阅外文、工具书和A-F类中文社会科学图书。[br/]
+		</data>
+		<hotspot name="spot6" style="skin_hotspotstyle3" ath="-173" atv="8" linkedscene="scene_xin_5_yuelanshi_outdoor" linkedscene_lookat="54"/>
+		<hotspot name="spot7" style="skin_hotspotstyle3" ath="-120" atv="20" linkedscene="scene_xin_5_yuelanshi_502" linkedscene_lookat="22"/>
+		<hotspot name="spot8" style="skin_hotspotstyle2" ath="-37" atv="0" onclick="close_other_layer_except(help);if(layer[help].visible,tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false)) ,set(layer[help].visible,true);tween(layer[help].alpha,1) )" text="B502、B503外文、工具书和中文社科图书借阅室"/>
+	</scene>
+<!-- 30 -->
+    <scene name="scene_xin_5_yuelanshi_outdoor" title="B区五楼阅览室门口" onstart="activatespot(125)" havevrimage="true" thumburl="panos/B503menkou.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="0.0" vlookat="0.0" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/B503menkou.tiles/preview.jpg" />
+
+		<image>
+			<cube url="panos/B503menkou.tiles/pano_%s.jpg" />
+		</image>
+		<hotspot name="spot6" style="skin_hotspotstyle3" ath="-124" atv="8" linkedscene="scene_xin_5_yuelanshi_503" linkedscene_lookat="4"/>
+		<hotspot name="spot5" style="skin_hotspotstyle3" ath="65" atv="1" linkedscene="scene_xin_5_zhengting" linkedscene_lookat="-100"/>
+		<hotspot name="spot4" style="skin_hotspotstyle3" ath="70" atv="10" linkedscene="scene_xin_5_yuelanshi_502" linkedscene_lookat="-55"/>
+		<hotspot name="spot7" style="skin_hotspotstyle5" ath="5" atv="15" linkedscene="scene_xin_4_yuelanshi" />
+	</scene>
+
+
+<scene name="scene_lao_5_zhengting" title="C区五楼大厅" onstart="activatespot(205)" havevrimage="true" thumburl="panos/C5louti.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="0.0" vlookat="0.0" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/C5louti.tiles/preview.jpg" />
+
+		
+		<image>
+			<cube url="panos/C5louti.tiles/pano_%s.jpg" />
+		</image>
+
+
+        <layer name="help" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false))"   /> 
+			<layer name="textarea" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext">
+			[b]C401-402中外文过刊阅览室：[/b]可馆内阅览中外文过刊。[br/]
+		</data>
+
+		<!-- 图层-->
+		<layer name="help2" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut2"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false))"   /> 
+			<layer name="textarea2" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text2" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext2" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext2">
+			[b]C403-404中外文现刊阅览室：[/b]可馆内阅览当年中外文期刊。[/b]
+		</data>
+
+
+
+		<image stereo="true" stereolabels="1|2" if="webvr.isenabled">
+			<cube url="panos/lao_4_zhengting.tiles/vr/pano_%t_%s.jpg" />
+		</image>
+		<hotspot name="spot4" style="skin_hotspotstyle5" ath="123.064" atv="9.412" linkedscene="scene_lao_4_zhengting" />
+		<hotspot name="spot6" style="skin_hotspotstyle3" ath="62.407" atv="4.474" linkedscene="scene_lao_5_yuelanshi" linkedscene_lookat="10"/>
+		<hotspot name="spot7" style="skin_hotspotstyle2" ath="61.883" atv="-4.595" onclick="close_other_layer_except(help);if(layer[help].visible,tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false)) ,set(layer[help].visible,true);tween(layer[help].alpha,1) )" text="C401 C402阅览室"/>
+		<hotspot name="spot8" style="skin_hotspotstyle2" ath="-116.742" atv="-7.345" onclick="close_other_layer_except(help2);if(layer[help2].visible,tween(layer[help2].alpha,0);delayedcall(0.5,set(layer[help2].visible,false)) ,set(layer[help2].visible,true);tween(layer[help2].alpha,1) )" text="C403 C404阅览室"/>
+
+	</scene>
+<scene name="scene_lao_5_yuelanshi" title="C区五楼阅览室" onstart="activatespot(-50)" havevrimage="true" thumburl="panos/C503.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="0.0" vlookat="0.0" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/C503.tiles/preview.jpg" />
+
+		<image>
+			<cube url="panos/C503.tiles/pano_%s.jpg" />
+		</image>
+
+		<image stereo="true" stereolabels="1|2" if="webvr.isenabled">
+			<cube url="panos/lao_4_yuelanshi.tiles/vr/pano_%t_%s.jpg" />
+		</image>
+		<hotspot name="spot4" style="skin_hotspotstyle3" ath="148.482" atv="7.468" linkedscene="scene_lao_5_zhengting" linkedscene_lookat="240"/>
+	</scene>
+
+<!-- 31 -->
+
+	<scene name="scene_xin_6" title="B区六楼" onstart="activatespot(90)" havevrimage="true" thumburl="panos/xin_6.tiles/thumb.jpg" lat="" lng="" heading="">
+
+		<view hlookat="141.324" vlookat="-3.085" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+		<preview url="panos/xin_6.tiles/preview.jpg" />
+
+		<image type="CUBE" multires="true" tilesize="512" if="!webvr.isenabled">
+			<level tiledimagewidth="2560" tiledimageheight="2560">
+				<cube url="panos/xin_6.tiles/%s/l3/%v/l3_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="1280" tiledimageheight="1280">
+				<cube url="panos/xin_6.tiles/%s/l2/%v/l2_%s_%v_%h.jpg" />
+			</level>
+			<level tiledimagewidth="640" tiledimageheight="640">
+				<cube url="panos/xin_6.tiles/%s/l1/%v/l1_%s_%v_%h.jpg" />
+			</level>
+		</image>
+
+		<layer name="help" type="container" alpha="0" visible="false" align="center" x="0" y="0" width="60%" height="80%"  bgcolor="0x333333" bgalpha="0.7" bgcapture="true" ondown="draglayer();">
+			<layer name="shut"     url="skin/shut.png"    align="righttop" width="prop" height="5%" ondown="tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false))"   /> 
+			<layer name="textarea" type="container" align="lefttop" x="2.5%" y="5%" width="95%" height="90%" bgcolor="0xFFFFFF" bgalpha="1.0" maskchildren="true">
+				<layer name="text" style="text" enabled="true" align="lefttop" x="0" y="0" width="100%" autoheight="true" css="text-align:left; color:#000000; font-family:Arial; font-size:16px;" html="data:testtext" ondown="draglayer_vertically_within_parent();" />
+			</layer>
+		</layer>
+		<data name="testtext">
+			[b]B601外文图书阅览室：[/b]可在馆内阅览外文图书。[br/]
+		</data>
+        
+
+		<image stereo="true" stereolabels="1|2" if="webvr.isenabled">
+			<cube url="panos/xin_6.tiles/vr/pano_%t_%s.jpg" />
+		</image>
+		<hotspot name="spot4" style="skin_hotspotstyle5" ath="-62.597" atv="0.045" linkedscene="scene_xin_5_yuelanshi"/>
+		<hotspot name="spot6" style="skin_hotspotstyle8" ath="122.215" atv="-2.893" linkedscene="scene_quanjing" />
+		<hotspot name="spot8" style="skin_hotspotstyle2" ath="152" atv="-8.5" onclick="close_other_layer_except(help);if(layer[help].visible,tween(layer[help].alpha,0);delayedcall(0.5,set(layer[help].visible,false)) ,set(layer[help].visible,true);tween(layer[help].alpha,1) )" text="B601外文图书阅览室"/>
+	</scene>
+
+
+
+
+
+
+
+     
+
+</krpano>
