@@ -1,0 +1,151 @@
+<krpano>
+	<set_lange
+		startnavi="Start Self-Navi"
+		closenavi="End Self-Navi"
+		scene0title="Full View of HUST Library"
+		libintro="[b]Library of Huazhong University of Science and Technology[/b][br/]
+			[b]· [/b]The Library of Huazhong University of science and technology now has three areas: HUST Library(Main), Tongji Library and HUST Library(East), with a total area of 64581 square meters.[br/]
+			[b]· [/b]The HUST Library(Main) is located in the center of the Huazhong University of Science and Technology. [br/]
+			[b]· [/b]The building on the right is Zone C of the library which was donated by Yifu Shao and People usually call it “Yifu hall”, with a construction area of 15320 square meters.[br/]
+			[b]· [/b]As of December 31, 2020, the total number of documents in the collection was 11.8507 million.[br/]The special collection of medical ancient books is one of the characteristics of the collection. Three kinds of ancient books were selected into the [b]National List of Precious Ancient Books[/b].[br/]
+			[b]· [/b]At present, there are 571 Chinese and foreign language databases, and the total number of databases is among the best in Colleges and universities of China.[br/]"
+		closesound1="Turn the Sound Off!"
+		libintro1="Library of Huazhong University of Science and Technology"
+		libnotice="Announcements and Notices"
+		scene1title="Hua Zhong Road"
+		chaxininfo="[b]· Novelty Search Site：[/b]HUST intellectual property information service center accepts novelty search entrustment, collection and citation, regular retrieval, agent retrieval, patent document retrieval, analysis and relevant intellectual property information services.[br/]"
+		chaxininfo1="Introduction of Novelty Search Site"
+		scene2title="Novelty Search Site"
+		scene3title="Main Entrance of Zone B"
+		Cvoice="Introduction of Zone C (by audio)"
+		entry1="[b]· Main Entrance of Zone B：[/b]Please swipe your campus card to get in and out of the library, or register with your valid ID card.[br/]"
+		entry11="Main Entrance of Zone B"
+		scene4title="Main Entrance of Zone C"
+		scene5title="Central hall of Zone C (1st floor)"
+		Cintro="[b]· Zone C：[/b]The library has more than 6600 available seats and 32 reading rooms, serving all teaching staff and nearly 70000 full-time students.[br/]
+			· The average number of readers entering the library is nearly 10000 times a day, as “Learning in HUST!” goes.[br/]
+			· Zone C is mainly the reading area, and the 2nd to 5th floors of this zone respectively cover natural science books, social science books, current periodicals, reference books, etc.[br/]"
+		wenxianziyuanjianshebu="[b]Document Resources Construction Department：[/b]Be responsible for ordering and collecting paper and electronic documents, collecting dissertations, recommending books to readers, book donation, etc.[br/]
+			[b]· C113-Paper Acceptance Room：[/b]Collect doctoral and master's theses of HUST.[br/]
+			[b]· C116-Journal Interview Room：[/b]Accept donations of books, manuscripts and other types of literature materials.[br/]
+			[b]· C118-Chinese Literature Interview Room：[/b]Accept the recommended purchase information of readers such as books, periodicals and databases.[br/]"
+		
+		entry2="[b]· Main Entrance of Zone C：[/b]Please swipe your campus card to get in and out of the library, or register with your valid ID card.[br/]"
+		Cyuyue="[b]· Seat Reservation Machine of Zone C：[/b]During peak periods such as examinations, the library often has no extra seats. Therefore, the library has introduced and used the seat reservation system. It is suggested to reserve seats in advance through the reservation machine, mobile phone or computer in the library.[br/]"
+		HUSTmodel="[b]· The Model of HUST：[/b]Visually display the whole view of Huazhong University of Science and Technology in 1990 in a scale of 1:500.[br/]"
+		Cintro1="Introduction of Zone C"
+		wenxianziyuan1="Introduction of Document Resources Construction Department"
+		Centry="Main Entrance of Zone C"
+		Corder="Seat Reservation Machine of Zone C"
+		HUSTmodel1="The Model of HUST"
+		scene6title="Corridor connecting B and C (1st floor)"
+		inforquery="[b]· Information Consulting Department：[/b]Provide services such as interlibrary loan and document transmission, database use consultation, teaching and training, discipline services, scientific and technological information analysis, etc.[br/]
+			[b]· C102-Document Applying Room：[/b]For the document resources not collected in our library, we can apply to the document collection units at home and abroad through interlibrary loan and document transmission.[br/]
+			[b]· C103、C104-Information Consulting Room：[/b]According to the needs of colleges and departments, relying on the library document information service platform, it provides in-depth information services for discipline users, such as discipline resource recommendation, customized lectures, embedded teaching, scientific research support, etc.[br/]
+			[b]· C105、C107-Information Research Room：According to the needs of discipline construction, scientific research, talent training and development decision-making, provide customized scientific and technological information services based on factual data, scientific and technological information and literature.[br/]"
+
+
+
+		oldpaper="[b]· C109-Old Newspaper-Collection Reading Room：[/b]There is a newspaper reading area.[br/]"
+		queryinfo="Introduction of Information Consulting Department"
+		oldpaperinfo="Introduction of Old Newspaper-Collection Reading Room"
+		scene7title="C109-Old Newspaper-Collection Reading Room"
+		scene8title="Central hall of Zone B"
+		wechat="[b]· Official Wechat of HUST Library：[/b] “A good book goes with you” is a reading promotion brand established in this library in 2015. With the fundamental task of building morality and cultivating people, with the theme of cultivating and practicing the core socialist values and carrying forward the excellent traditional culture of the Chinese nation, give full play to the library's own advantages, such as wide space, elegant environment, rich paper and electric literature resources and complete categories, large scale of readers of teachers and students and wide range of reader services, and actively expand the field of services, Extended reading promotion tentacles; Innovative service forms have been carried out throughout the year to carry out national reading promotion activities with various forms and rich contents, strive to cultivate the reading interests and habits of teachers and students of Huazhong University of science and technology, community residents and social readers, and make a unique contribution to building a scholarly campus with central China characteristics.
+			[b]· Subscribe to the official wechat of “华中科技大学图书馆官微” and join us in reading activities![/b][br/]"
+
+		search="[b]· Querying and Searching Area：[/b]People can query the collection documents by themselves.[br/]"
+		ask="[b]· Advisory Office：[/b]Provide consulting services. [br/]"
+		borrow="[b]· Borrowing and Returning Office：[/b]Provide book borrowing and returning service. [br/]"
+		search1="Querying and Searching Area"
+		ask1="Advisory Office"
+		borrow1="Lending and Returning Office"
+		wechat1="Official Wechat of HUST Library"
+		scene9title="Round hall of Zone B"
+		Bentry="[b]· Inside the entrance of Zone B：[/b]The first thing people see in area B is the main reader service area.[br/]
+			[b]· [/b]In front of it are the collection Querying and Searching Area, Exhibition Area, Reading Booth, etc.[br/]
+			[b]· [/b]On the left is the information office, Borrowing and Returning Office, Self-Service Borrowing and Returning Machine, Reader Service Department, etc.[br/]"
+		read="[b]· Reading Booth：[/b]It is a mobile recording studio equipped with recording and sound insulation equipment to record and share good articles.[br/]"
+		Bcircle="[b]· Zone B：[/b]The 2nd-5th floors of Zone B are the borrowing area of natural science and social science books, and the 6th floor is the reading room of foreign language books[br/]The 2nd-5th floors of zone B are the borrowing area of natural science and social science books, and the 6th floor is the reading room of foreign language books.[br/]
+			[b]· [/b]On the left in front is b105 free reading space, which is equipped with multiple categories of books, art books and current month newspapers.[br/]
+			[b]· [/b]Cross the corridor to B106 Property Engineering Department and B107 Dense Library.[br/]"
+		B1floorinfo="Introduction of the 1st floor of Zone B"
+		read1="Reading Booth"
+		Bcircle1="Round hall of Zone B"
+		scene10title="Self-Service Borrowing and Returning Area"
+		clean="[b]· Self-Service Book Disinfection Machine：[/b]Provide self-service book disinfection service.[br/]"
+		borrow2="[b]· Self-Service Borrowing and Returning Machine：[/b] You can swipe your campus card or face to go through the book borrowing and returning procedures on the Self-Service Borrowing and Returning Machine.[br/]"
+		clean1="Self-Service Book Disinfection Machine"
+		borrow3="Self-Service Borrowing and Returning Machine"
+		borrowvideo="Introduction of Book Borrowing and Returning Process"
+		scene11title="Corridor of Zone B (1st floor)"
+		B105="[b]· B105-Reading Room[/b]"
+		B1051="B105-Reading Room"
+		scene12title="B105-Reading Room"
+		scene13title="Secondary hall of Zone B"
+		houmenting="[b]· B107-Dense Library：[/b]For books with a long collection age, if necessary, please register at the borrow and return office, and pick up the books after receiving the book collection notice.[br/]"
+		B106="B106-Property Engineering Department"
+		B107="B107-Dense Library"
+		scene14title="Hall of Zone B (2nd floor)"
+		commu="[b]· Reader Communication Area：[/b]Activities such as learning, reading and communication can be carried out.[br/]"
+		newbook="[b]· New Book Exhibition Area：[/b]New book display and reading area.[br/]"
+		commu1="Reader Communication Area"
+		newbook1="New Book Exhibition Area"
+		B209="B209、B210-Reading Room"
+		scene15title="Corridor connecting B and C (2nd floor)"
+		scene16title="Hall of Zone C (2nd floor)"
+		C201="[b]· C201、C202-Chinese Natural Science Book Reading Room：[/b]You can read Q-S / TP / TQ / TS / TU / TV Chinese natural science books in the library.[br/]"
+		C203="[b]· C203、C204-Chinese Natural Science Book Reading Room：[/b]You can read N-P/T/TB/TD-TH/TJ-TN/U/V/X/Z Chinese natural science books in the library.[br/]"
+		C202="C201、C202-Reading Room"
+		C204="C203、C204-Reading Room"
+		scene17title="Hall of Zone C (3rd floor)"
+		C301="[b]· C301、C302-Chinese Social Science Book Reading Room：[/b]You can read A-E Chinese social science books in the library.[br/]"
+		C303="[b]· C303、C304-Chinese Social Science Book Reading Room：[/b]You can read F-H Chinese social science books in the library.[br/]"
+
+		C302="C301、C302-Reading Room"
+		C304="C303、C304-Reading Room"
+		scene18title="Corridor connecting B and C (3rd floor)"
+		scene19title="Hall of Zone B (3rd floor)"
+		B301="[b]· B301-312-Administrative Office Area：[/b]The main administrative office area of the library accepts all kinds of readers' advice and suggestions.[br/]"
+		B313="[b]· B313、B314-Chinese Natural Science Book Borrowing Room：[/b]You can borrow N-T/TB/TD-TH/TJ-TN Chinese natural science books in the library.[br/]"
+		B302="B301-312 - Administrative Office Area"
+		B314="B313、B314-Chinese Natural Science Book Borrowing Room"
+		scene20title="Corridor of Zone B (4th floor)"
+		scene21title="Digital Reading Room of Zone B (4th floor)"
+		B401="[b]· B401-Digital Reading Room：[/b]You can swipe your campus card on the computer and enter the campus card number and password to enter the electronic reading system.[br/]"
+		B1401="B401-Digital Reading Room"
+		B4012="[b]· B401-Audiovisual Room：[/b]Carry out various film viewing and sharing activities.[br/]"
+		B2401="B401-Audiovisual Room"
+		scene22title="B402-Reading Room"
+		B402="B402、B403-Chinese Social Science Book Borrowing Room"
+		scene23title="B403-Reading Room"
+		scene24title="Corridor of Zone B (4th floor,back-side)"
+		scene25title="Hall of Zone C (4th floor)"
+		C401="[b]· C401、C402-Chinese and Foreign Back Issue Publication Reading Room：[/b]Back issues in Chinese and foreign publication can be read in the library.[br/]"
+		C402="C401、C402-Chinese and Foreign Back Issue Publication Reading Room"
+		C403="[b]· C403、C404-Chinese and Foreign Current Issue Publication Reading Room：[/b]Current issues in Chinese and foreign publication can be read in the library.[br/]"
+		C404="C403、C404-Chinese and Foreign Current Issue Publication Reading Room"
+		scene26title="C403、C404-Reading Room"
+		scene27title="C503、C504-Reading Room"
+		scene28title="Hall of Zone C (5th floor)"
+		C501="[b]· C501、C502-Reading Room[/b]"
+		C503="[b]· C503、C504-Reading Room[/b]"
+		C502="C501、C502-Reading Room"
+		C504="C503、C504-Reading Room"
+		scene29title="Corridor of Zone B (5th floor)"
+		B501="[b]· B501-Academic Report hall：[/b]It is open to the school and can organize all kinds of training, lectures, seminars and other activities.[br/]"
+		B1501="B501-Academic Report hall"
+		scene30title="B502-Borrowing Room"
+		B502="[b]· B502、B503-Borrowing Room for Foreign Language, Reference Books and Chinese Social Science Books：[/b]You can borrow foreign languages, reference books and A-F Chinese social science books.[br/]"
+		B1502="B502、B503-Borrowing Room for Foreign Language, Reference Books and Chinese Social Science Books"
+		scene31title="B503-Borrowing Room"
+		B503="[b]· B502、B503-Borrowing Room for Foreign Language, Reference Books and Chinese Social Science Books：[/b]You can borrow foreign languages, reference books and A-F Chinese social science books.[br/]"
+		B1503="B502、B503-Borrowing Room for Foreign Language, Reference Books and Chinese Social Science Books"
+		scene32title="Corridor of Zone B (5th floor,back-side)"
+		scene33title="The 6th Floor of HUST Library"
+		B601="[b]· B601-Foreign Language Book Reading Room：[/b]Foreign language books can be read in the library.[br/]"
+		B1601="B601-Foreign Language Book Reading Room"
+	/>
+
+	<include url="tour.xml" />
+</krpano>
